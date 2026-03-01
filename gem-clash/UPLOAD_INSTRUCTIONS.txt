@@ -1,0 +1,96 @@
+GEM LINK — JEST PLATFORM UPLOAD
+================================
+
+READY TO UPLOAD: YES
+BUILD ARCHIVE: /Users/karen/Desktop/Git Projects/skill-legal/gem-clash/gem-link.zip
+BUILD SIZE: 0.99 MB (well under 10MB limit)
+BUILD STATUS: PASS (zero errors, 184 tests passing)
+
+QUICK UPLOAD STEPS
+==================
+
+1. GO TO JEST DEVELOPER CONSOLE
+   → https://jest.com/developers
+   → Log in with your developer account
+
+2. CREATE/SELECT YOUR GAME
+   → If first submission: Click "Create New Game"
+   → Game slug: "gem-link" (IMMUTABLE after creation)
+   → Game title: "Gem Link"
+   → Category: Puzzle
+
+3. UPLOAD BUILD
+   → Navigate to "Builds" tab
+   → Click "Upload New Build"
+   → Select file: gem-link.zip (this directory)
+   → Wait for upload to complete
+
+4. CONFIGURE GAME (Before Submission)
+   → Game Details: Title, description, category, explore card image
+   → Products: Register 3 SKUs (starter_pack, coin_bundle, premium_pass)
+   → Notifications: Register templates (daily_reminder, level_progress, streak_reminder)
+   → Secrets: Configure shared secret for JWT verification
+   → Compliance: Complete SHAFT certification
+
+5. TEST IN EMULATOR
+   → Copy game URL from Developer Console
+   → Test SDK initialization, purchases, notifications
+   → Verify no console errors
+
+6. SUBMIT FOR REVIEW
+   → Click "Submit for Review" in Developer Console
+   → Review typically takes 1-3 business days
+   → Respond to any reviewer feedback
+
+7. GO LIVE (After Approval)
+   → Set game visibility to "Public"
+   → Game appears in Jest marketplace
+
+PRE-UPLOAD CHECKLIST
+====================
+□ Game slug chosen (immutable after creation)
+□ SKUs registered in Developer Console (3 products)
+□ Notification templates registered (3 templates)
+□ Shared secret configured
+□ Privacy policy URL added
+□ SHAFT compliance self-certification complete
+□ Explore card image uploaded (16:9 ratio)
+
+BUILD VALIDATION
+================
+✓ index.html at root
+✓ Jest SDK script tag present
+✓ All assets bundled (no external CDN)
+✓ Build size under 10MB (0.99 MB)
+✓ Guest mode functional
+✓ TypeScript compilation successful
+✓ Tests passing (184/184)
+✓ No console errors
+
+COMMON ISSUES TO AVOID
+======================
+✗ Missing guest mode (requires registration to play)
+✗ External CDN requests (blocks sandbox)
+✗ Absolute asset paths (use relative paths)
+✗ Broken purchase flow (incomplete recovery)
+✗ SHAFT violations (prohibited content)
+
+NEXT STEPS AFTER UPLOAD
+========================
+1. Test in Emulator (Tier 2)
+2. Create sandbox users and test on device (Tier 3)
+3. Submit for review
+4. Monitor review status in Developer Console
+5. Address feedback if any
+6. Go live once approved
+
+SUPPORT
+=======
+Developer Console: https://jest.com/developers
+Platform Docs: /Users/karen/Desktop/Git Projects/skill-legal/docs/jest-platform/
+Full Checklist: JEST_SUBMISSION_CHECKLIST.md (this directory)
+
+REGENERATE BUILD (if needed)
+=============================
+cd /Users/karen/Desktop/Git Projects/skill-legal/gem-clash
+npm run build:zip

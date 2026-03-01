@@ -1,0 +1,26 @@
+name = "gem-clash-verify"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+# KV namespace for IP-based rate limiting.
+# After first deploy, create the namespace with:
+#   wrangler kv namespace create RATE_LIMITER
+# Then paste the returned id below.
+[[kv_namespaces]]
+binding = "RATE_LIMITER"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Secrets are set via `wrangler secret put`, NOT here.
+# Required secrets:
+#   JEST_SHARED_SECRET  - Base64-encoded HMAC key from Jest Developer Console
+#   JEST_GAME_ID        - Your game's ID on the Jest platform
+
+# Preview (local dev) KV namespace -- create with:
+#   wrangler kv namespace create RATE_LIMITER --preview
+# [[kv_namespaces]]
+# binding = "RATE_LIMITER"
+# id = "REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID"
+# preview_id = "REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID"
+
+[observability]
+enabled = true

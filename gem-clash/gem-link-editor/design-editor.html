@@ -1,0 +1,2448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gem Link Design Editor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Left Panel - Controls */
+    .controls-panel {
+      width: 340px;
+      background: #1a1a1a;
+      padding: 16px;
+      overflow-y: auto;
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      border-right: 1px solid #333;
+    }
+
+    .controls-panel h1 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: #FFD700;
+    }
+
+    .section {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #333;
+    }
+
+    .section h2 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #888;
+      margin-bottom: 10px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section h2::after {
+      content: '▼';
+      font-size: 10px;
+    }
+
+    .section.collapsed h2::after {
+      content: '►';
+    }
+
+    .section.collapsed .section-content {
+      display: none;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .row label {
+      font-size: 12px;
+      color: #aaa;
+      min-width: 90px;
+    }
+
+    .row input[type="range"] {
+      flex: 1;
+      max-width: 100px;
+    }
+
+    .row input[type="color"] {
+      width: 32px;
+      height: 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .row input[type="number"] {
+      width: 50px;
+      background: #333;
+      border: 1px solid #555;
+      color: #fff;
+      padding: 4px;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .val {
+      font-size: 11px;
+      color: #888;
+      min-width: 30px;
+      text-align: right;
+    }
+
+    .val {
+      font-size: 11px;
+      color: #666;
+      width: 35px;
+      text-align: right;
+    }
+
+    /* Asset Library */
+    .asset-library {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .asset-item {
+      width: 60px;
+      height: 60px;
+      background: #222;
+      border: 2px solid #444;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .asset-item:hover {
+      border-color: #FFD700;
+    }
+
+    .asset-item img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .asset-item .delete-btn {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 16px;
+      height: 16px;
+      background: #E74C3C;
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 10px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .asset-item:hover .delete-btn {
+      display: block;
+    }
+
+    .upload-zone {
+      width: 60px;
+      height: 60px;
+      background: #1a1a1a;
+      border: 2px dashed #555;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 24px;
+      color: #555;
+    }
+
+    .upload-zone:hover {
+      border-color: #FFD700;
+      color: #FFD700;
+    }
+
+    /* Preview Panel */
+    .preview-panel {
+      margin-left: 340px;
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .screen-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .screen-tab {
+      padding: 8px 16px;
+      background: #333;
+      border: none;
+      border-radius: 6px;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .screen-tab:hover { background: #444; }
+    .screen-tab.active { background: #FFD700; color: #000; }
+
+    /* Phone Frame */
+    .phone-frame {
+      width: 410px;
+      height: 720px;
+      background: #000;
+      border-radius: 36px;
+      padding: 16px;
+      position: relative;
+    }
+
+    .phone-screen {
+      width: 378px;
+      height: 688px;
+      background: linear-gradient(180deg, #1A0A2E, #2D1B4E);
+      border-radius: 24px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .game-screen {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: none;
+    }
+
+    .game-screen.active {
+      display: block;
+    }
+
+    /* Editable Elements */
+    .editable {
+      position: absolute;
+      cursor: move;
+      border: 2px solid transparent;
+    }
+
+    .editable:hover {
+      border-color: rgba(255, 215, 0, 0.5);
+    }
+
+    .editable.selected {
+      border-color: #FFD700;
+    }
+
+    .editable.selected::before {
+      content: attr(data-name);
+      position: absolute;
+      top: -20px;
+      left: 0;
+      background: #FFD700;
+      color: #000;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    /* Resize handles */
+    .resize-handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #FFD700;
+      border-radius: 2px;
+    }
+
+    .resize-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+    .resize-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+    .resize-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
+    .resize-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
+    .resize-handle.e { top: 50%; right: -5px; transform: translateY(-50%); cursor: e-resize; }
+    .resize-handle.w { top: 50%; left: -5px; transform: translateY(-50%); cursor: w-resize; }
+    .resize-handle.n { left: 50%; top: -5px; transform: translateX(-50%); cursor: n-resize; }
+    .resize-handle.s { left: 50%; bottom: -5px; transform: translateX(-50%); cursor: s-resize; }
+
+    /* Properties Panel */
+    .properties-panel {
+      width: 280px;
+      background: #1a1a1a;
+      padding: 16px;
+      overflow-y: auto;
+      height: 100vh;
+      position: fixed;
+      right: 0;
+      top: 0;
+      border-left: 1px solid #333;
+    }
+
+    .properties-panel h2 {
+      font-size: 14px;
+      color: #FFD700;
+      margin-bottom: 16px;
+    }
+
+    .prop-group {
+      margin-bottom: 16px;
+    }
+
+    .prop-group h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .prop-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+
+    .prop-row label {
+      font-size: 12px;
+      color: #aaa;
+      width: 60px;
+    }
+
+    .prop-row input {
+      flex: 1;
+      background: #333;
+      border: 1px solid #555;
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .no-selection {
+      color: #666;
+      font-size: 13px;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    /* Default element styles */
+    .el-logo {
+      background: linear-gradient(180deg, #FFD700, #FFA500);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 42px;
+      font-weight: bold;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .el-logo img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .el-button {
+      background: linear-gradient(180deg, #4CAF50, #388E3C);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      text-shadow: 1px 2px 2px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .el-button.gold {
+      background: linear-gradient(180deg, #FFD700, #FFA500);
+      color: #333;
+    }
+
+    .el-gift-banner {
+      background: linear-gradient(90deg, #8B4513, #A0522D);
+      border-radius: 12px;
+      border: 2px solid #D4A574;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .el-gift-banner .gift-icon {
+      font-size: 28px;
+      margin-right: 10px;
+    }
+
+    .el-gift-banner .gift-text {
+      color: #FFD700;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .el-gift-banner .timer {
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      background: rgba(0,0,0,0.3);
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+
+    .el-board {
+      background: linear-gradient(180deg, #8B4513, #654321);
+      border-radius: 16px;
+      padding: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .el-board-inner {
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 4px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .board-gem {
+      border-radius: 6px;
+      aspect-ratio: 1;
+    }
+
+    .el-hud {
+      display: flex;
+      gap: 8px;
+    }
+
+    .hud-item {
+      background: rgba(0,0,0,0.5);
+      border-radius: 20px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hud-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+    }
+
+    .hud-value {
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .el-booster-tray {
+      display: flex;
+      gap: 12px;
+    }
+
+    .booster-btn {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(180deg, #444, #333);
+      border: 2px solid #555;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      position: relative;
+    }
+
+    .booster-btn::after {
+      content: '3';
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 18px;
+      height: 18px;
+      background: #4CAF50;
+      border-radius: 50%;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    .el-gem-preview {
+      display: grid;
+      gap: 4px;
+    }
+
+    .preview-gem {
+      border-radius: 6px;
+      aspect-ratio: 1;
+    }
+
+    .el-shop-header {
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      color: #FFD700;
+      text-shadow: 2px 3px 6px rgba(0,0,0,0.5);
+    }
+
+    .el-shop-card {
+      background: linear-gradient(135deg, #16213E, #1a2a4a);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .shop-card-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .shop-card-info { flex: 1; }
+    .shop-card-title { font-weight: bold; color: white; font-size: 14px; }
+    .shop-card-desc { font-size: 11px; color: #888; }
+
+    .shop-card-price {
+      background: #4CAF50;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-weight: bold;
+      color: white;
+      font-size: 13px;
+    }
+
+    .el-level-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .level-node {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #4CAF50, #388E3C);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 16px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+    }
+
+    .level-node.locked {
+      background: #555;
+      color: #888;
+    }
+
+    .level-node.current {
+      border: 3px solid #FFD700;
+      box-shadow: 0 0 12px #FFD700;
+    }
+
+    /* Drop zone highlight */
+    .phone-screen.drag-over {
+      outline: 3px dashed #FFD700;
+      outline-offset: -3px;
+    }
+
+    .btn-export {
+      width: 100%;
+      padding: 12px;
+      background: #FFD700;
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+
+    .btn-export:hover {
+      background: #FFA500;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 10px;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 8px;
+      color: #aaa;
+      cursor: pointer;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+
+    .btn-secondary:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    /* Hitbox testing feedback */
+    .editable[data-has-image-hitbox="true"] {
+      position: relative;
+    }
+
+    .hitbox-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Individual gem/booster styling */
+    .editable.gem-cell {
+      border-radius: 6px;
+      transition: transform 0.1s;
+    }
+
+    .editable.gem-cell:hover {
+      transform: scale(1.1);
+      z-index: 5;
+    }
+
+    .editable.booster-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Group container styling */
+    .element-group {
+      pointer-events: none;
+    }
+
+    .element-group > .editable {
+      pointer-events: auto;
+    }
+
+    /* Asset applied indicator */
+    .editable[data-has-image-hitbox="true"]::after {
+      content: '⬡';
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #4CAF50;
+      color: white;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      font-size: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left Panel -->
+  <div class="controls-panel">
+    <h1>🎮 Gem Link Designer</h1>
+
+    <!-- Screen Selection -->
+    <div class="section">
+      <h2>Screen</h2>
+      <div class="section-content">
+        <div class="screen-tabs" style="flex-wrap: wrap;">
+          <button class="screen-tab active" data-screen="menu">Menu</button>
+          <button class="screen-tab" data-screen="gameplay">Game</button>
+          <button class="screen-tab" data-screen="shop">Shop</button>
+          <button class="screen-tab" data-screen="levels">Levels</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Asset Library -->
+    <div class="section">
+      <h2>Asset Library</h2>
+      <div class="section-content">
+        <p style="font-size: 11px; color: #666; margin-bottom: 8px;">Drag assets onto the preview</p>
+        <div class="asset-library" id="asset-library">
+          <div class="upload-zone" id="upload-zone">+</div>
+        </div>
+        <input type="file" id="asset-upload" accept="image/*" multiple hidden>
+      </div>
+    </div>
+
+    <!-- Global Colors -->
+    <div class="section">
+      <h2>Colors</h2>
+      <div class="section-content">
+        <div class="row">
+          <label>Background 1</label>
+          <input type="color" id="color-bg1" value="#1A0A2E">
+        </div>
+        <div class="row">
+          <label>Background 2</label>
+          <input type="color" id="color-bg2" value="#2D1B4E">
+        </div>
+        <div class="row">
+          <label>Accent</label>
+          <input type="color" id="color-accent" value="#FFD700">
+        </div>
+        <div class="row">
+          <label>Button</label>
+          <input type="color" id="color-button" value="#4CAF50">
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Element -->
+    <div class="section">
+      <h2>Add Element</h2>
+      <div class="section-content">
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <button class="btn-secondary" style="flex: 1; min-width: 80px;" onclick="addElement('button')">Button</button>
+          <button class="btn-secondary" style="flex: 1; min-width: 80px;" onclick="addElement('text')">Text</button>
+          <button class="btn-secondary" style="flex: 1; min-width: 80px;" onclick="addElement('box')">Box</button>
+          <button class="btn-secondary" style="flex: 1; min-width: 80px;" onclick="addElement('image')">Image</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gem Assets Mapping -->
+    <div class="section">
+      <h2>Gem Asset Mapping</h2>
+      <div class="section-content">
+        <p style="font-size: 10px; color: #666; margin-bottom: 10px;">Drag assets to gem colors to replace them</p>
+        <div id="gem-color-map" style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <div class="gem-map-slot" data-color="red" style="width: 50px; height: 50px; background: linear-gradient(135deg, #E74C3C, #C0392B); border-radius: 8px; border: 2px dashed #555; cursor: pointer;" title="Red Gem"></div>
+          <div class="gem-map-slot" data-color="blue" style="width: 50px; height: 50px; background: linear-gradient(135deg, #3498DB, #2980B9); border-radius: 8px; border: 2px dashed #555; cursor: pointer;" title="Blue Gem"></div>
+          <div class="gem-map-slot" data-color="green" style="width: 50px; height: 50px; background: linear-gradient(135deg, #2ECC71, #27AE60); border-radius: 8px; border: 2px dashed #555; cursor: pointer;" title="Green Gem"></div>
+          <div class="gem-map-slot" data-color="purple" style="width: 50px; height: 50px; background: linear-gradient(135deg, #9B59B6, #8E44AD); border-radius: 8px; border: 2px dashed #555; cursor: pointer;" title="Purple Gem"></div>
+          <div class="gem-map-slot" data-color="yellow" style="width: 50px; height: 50px; background: linear-gradient(135deg, #F1C40F, #F39C12); border-radius: 8px; border: 2px dashed #555; cursor: pointer;" title="Yellow Gem"></div>
+          <div class="gem-map-slot" data-color="white" style="width: 50px; height: 50px; background: linear-gradient(135deg, #ECF0F1, #BDC3C7); border-radius: 8px; border: 2px dashed #555; cursor: pointer;" title="White Gem"></div>
+        </div>
+        <button class="btn-secondary" onclick="applyGemAssetsToBoard()" style="margin-top: 8px;">Apply to Board</button>
+        <button class="btn-secondary" onclick="clearGemAssets()" style="margin-top: 4px;">Clear Mappings</button>
+      </div>
+    </div>
+
+    <!-- Booster Assets -->
+    <div class="section">
+      <h2>Booster Assets</h2>
+      <div class="section-content">
+        <p style="font-size: 10px; color: #666; margin-bottom: 10px;">Drag assets to booster slots</p>
+        <div id="booster-asset-map" style="display: flex; gap: 8px;">
+          <div class="booster-map-slot" data-booster="hammer" style="width: 50px; height: 50px; background: linear-gradient(180deg, #444, #333); border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px;">🔨</div>
+          <div class="booster-map-slot" data-booster="bomb" style="width: 50px; height: 50px; background: linear-gradient(180deg, #444, #333); border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px;">💣</div>
+          <div class="booster-map-slot" data-booster="rainbow" style="width: 50px; height: 50px; background: linear-gradient(180deg, #444, #333); border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px;">🌈</div>
+        </div>
+        <button class="btn-secondary" onclick="applyBoosterAssets()" style="margin-top: 8px;">Apply to Boosters</button>
+      </div>
+    </div>
+
+    <!-- Element Mode -->
+    <div class="section">
+      <h2>Element Mode</h2>
+      <div class="section-content">
+        <p style="font-size: 10px; color: #666; margin-bottom: 10px;">Convert grouped items to individual elements for direct editing</p>
+        <button class="btn-secondary" onclick="convertBoardToElements()">Convert Board Gems</button>
+        <button class="btn-secondary" onclick="convertBoostersToElements()">Convert Boosters</button>
+        <p style="font-size: 10px; color: #888; margin-top: 8px;">Note: After converting, each gem/booster becomes selectable. Drag an asset directly onto any gem to replace it.</p>
+      </div>
+    </div>
+
+    <!-- Component Sizes -->
+    <div class="section">
+      <h2>Component Sizes</h2>
+      <div class="section-content">
+        <p style="font-size: 10px; color: #666; margin-bottom: 10px;">Direct sliders for each component</p>
+
+        <div style="font-size: 11px; color: #FFD700; margin: 8px 0 4px;">FREE GIFT BANNER</div>
+        <div class="row">
+          <label>Width</label>
+          <input type="range" id="gift-width" min="150" max="360" value="330">
+          <span class="val" id="gift-width-val">330</span>
+        </div>
+        <div class="row">
+          <label>Height</label>
+          <input type="range" id="gift-height" min="40" max="120" value="72">
+          <span class="val" id="gift-height-val">72</span>
+        </div>
+
+        <div style="font-size: 11px; color: #FFD700; margin: 12px 0 4px;">GAME BOARD</div>
+        <div class="row">
+          <label>Width</label>
+          <input type="range" id="board-width" min="200" max="370" value="338">
+          <span class="val" id="board-width-val">338</span>
+        </div>
+        <div class="row">
+          <label>Height</label>
+          <input type="range" id="board-height" min="200" max="500" value="380">
+          <span class="val" id="board-height-val">380</span>
+        </div>
+        <div class="row">
+          <label>Padding</label>
+          <input type="range" id="board-padding" min="0" max="24" value="8">
+          <span class="val" id="board-padding-val">8</span>
+        </div>
+        <div class="row">
+          <label>Columns</label>
+          <input type="range" id="board-cols" min="5" max="10" value="8">
+          <span class="val" id="board-cols-val">8</span>
+        </div>
+        <div class="row">
+          <label>Rows</label>
+          <input type="range" id="board-rows" min="5" max="10" value="8">
+          <span class="val" id="board-rows-val">8</span>
+        </div>
+
+        <div style="font-size: 11px; color: #FFD700; margin: 12px 0 4px;">HUD BAR</div>
+        <div class="row">
+          <label>Height</label>
+          <input type="range" id="hud-height" min="24" max="60" value="36">
+          <span class="val" id="hud-height-val">36</span>
+        </div>
+
+        <div style="font-size: 11px; color: #FFD700; margin: 12px 0 4px;">BOOSTERS</div>
+        <div class="row">
+          <label>Size</label>
+          <input type="range" id="booster-size" min="36" max="80" value="52">
+          <span class="val" id="booster-size-val">52</span>
+        </div>
+
+        <div style="font-size: 11px; color: #FFD700; margin: 12px 0 4px;">SHOP CARDS</div>
+        <div class="row">
+          <label>Height</label>
+          <input type="range" id="shop-card-height" min="60" max="140" value="80">
+          <span class="val" id="shop-card-height-val">80</span>
+        </div>
+
+        <div style="font-size: 11px; color: #FFD700; margin: 12px 0 4px;">BUTTONS</div>
+        <div class="row">
+          <label>Width</label>
+          <input type="range" id="btn-width" min="120" max="340" value="200">
+          <span class="val" id="btn-width-val">200</span>
+        </div>
+        <div class="row">
+          <label>Height</label>
+          <input type="range" id="btn-height" min="36" max="80" value="50">
+          <span class="val" id="btn-height-val">50</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="section">
+      <h2>Export</h2>
+      <div class="section-content">
+        <button class="btn-export" onclick="exportDesign()">Export Design</button>
+        <button class="btn-secondary" onclick="resetDesign()">Reset All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Panel -->
+  <div class="preview-panel" style="margin-right: 280px;">
+    <div class="phone-frame">
+      <div class="phone-screen" id="phone-screen">
+
+        <!-- Menu Screen -->
+        <div class="game-screen active" id="screen-menu">
+          <div class="editable el-logo" data-name="Logo" data-type="logo"
+               style="left: 50px; top: 60px; width: 278px; height: 80px;">
+            Gem Link
+          </div>
+
+          <div class="editable el-gem-preview" data-name="Gem Preview" data-type="gem-preview"
+               style="left: 44px; top: 170px; width: 290px; height: 120px; grid-template-columns: repeat(5, 1fr);">
+          </div>
+
+          <div class="editable el-button" data-name="Play Button" data-type="button"
+               style="left: 89px; top: 320px; width: 200px; height: 50px;">
+            PLAY
+          </div>
+
+          <div class="editable el-button gold" data-name="Shop Button" data-type="button"
+               style="left: 89px; top: 385px; width: 200px; height: 50px;">
+            SHOP
+          </div>
+
+          <div class="editable el-gift-banner" data-name="Free Gift" data-type="gift-banner"
+               style="left: 24px; top: 580px; width: 330px; height: 72px;">
+            <div style="display: flex; align-items: center;">
+              <span class="gift-icon">🎁</span>
+              <span class="gift-text">FREE GIFT!</span>
+            </div>
+            <span class="timer">04:32</span>
+          </div>
+        </div>
+
+        <!-- Gameplay Screen -->
+        <div class="game-screen" id="screen-gameplay">
+          <div class="editable el-hud" data-name="HUD Bar" data-type="hud"
+               style="left: 20px; top: 50px; width: 338px; height: 36px;">
+            <div class="hud-item">
+              <div class="hud-icon" style="background: #FFD700;"></div>
+              <span class="hud-value">1,250</span>
+            </div>
+            <div class="hud-item">
+              <div class="hud-icon" style="background: #3498DB;"></div>
+              <span class="hud-value">15</span>
+            </div>
+            <div class="hud-item">
+              <div class="hud-icon" style="background: #E74C3C;"></div>
+              <span class="hud-value">4,800</span>
+            </div>
+          </div>
+
+          <div class="editable el-board" data-name="Game Board" data-type="board"
+               style="left: 20px; top: 110px; width: 338px; height: 380px;">
+            <div class="el-board-inner" id="board-grid" style="width: 100%; height: 100%; grid-template-columns: repeat(8, 1fr);">
+            </div>
+          </div>
+
+          <div class="editable el-booster-tray" data-name="Boosters" data-type="booster-tray"
+               style="left: 95px; top: 520px; width: 188px; height: 56px;">
+            <div class="booster-btn">🔨</div>
+            <div class="booster-btn">💣</div>
+            <div class="booster-btn">🌈</div>
+          </div>
+        </div>
+
+        <!-- Shop Screen -->
+        <div class="game-screen" id="screen-shop">
+          <div class="editable el-shop-header" data-name="Shop Title" data-type="text"
+               style="left: 50px; top: 50px; width: 278px; height: 50px;">
+            SHOP
+          </div>
+
+          <div class="editable el-shop-card" data-name="Shop Card 1" data-type="shop-card"
+               style="left: 24px; top: 120px; width: 330px; height: 80px;">
+            <div class="shop-card-icon">💰</div>
+            <div class="shop-card-info">
+              <div class="shop-card-title">500 Coins</div>
+              <div class="shop-card-desc">A small pile of coins</div>
+            </div>
+            <div class="shop-card-price">50</div>
+          </div>
+
+          <div class="editable el-shop-card" data-name="Shop Card 2" data-type="shop-card"
+               style="left: 24px; top: 212px; width: 330px; height: 80px;">
+            <div class="shop-card-icon">💰</div>
+            <div class="shop-card-info">
+              <div class="shop-card-title">2,500 Coins</div>
+              <div class="shop-card-desc">A bag of coins</div>
+            </div>
+            <div class="shop-card-price">200</div>
+          </div>
+
+          <div class="editable el-shop-card" data-name="Shop Card 3" data-type="shop-card"
+               style="left: 24px; top: 304px; width: 330px; height: 80px;">
+            <div class="shop-card-icon">🏆</div>
+            <div class="shop-card-info">
+              <div class="shop-card-title">10,000 Coins</div>
+              <div class="shop-card-desc">A chest of coins!</div>
+            </div>
+            <div class="shop-card-price">750</div>
+          </div>
+        </div>
+
+        <!-- Levels Screen -->
+        <div class="game-screen" id="screen-levels">
+          <div class="editable el-shop-header" data-name="Level Title" data-type="text"
+               style="left: 50px; top: 50px; width: 278px; height: 50px;">
+            Select Level
+          </div>
+
+          <div class="editable el-level-grid" data-name="Level Grid" data-type="level-grid"
+               style="left: 24px; top: 120px; width: 330px; height: 400px; grid-template-columns: repeat(5, 1fr);">
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Properties Panel -->
+  <div class="properties-panel" id="properties-panel">
+    <h2>Properties</h2>
+    <div class="no-selection" id="no-selection">
+      Click an element to edit its properties
+    </div>
+    <div id="prop-editor" style="display: none;">
+      <div class="prop-group">
+        <h3>Position</h3>
+        <div class="prop-row">
+          <label>X</label>
+          <input type="number" id="prop-x">
+        </div>
+        <div class="prop-row">
+          <label>Y</label>
+          <input type="number" id="prop-y">
+        </div>
+      </div>
+      <div class="prop-group">
+        <h3>Size</h3>
+        <div class="prop-row">
+          <label>Width</label>
+          <input type="number" id="prop-width">
+        </div>
+        <div class="prop-row">
+          <label>Height</label>
+          <input type="number" id="prop-height">
+        </div>
+      </div>
+      <div class="prop-group">
+        <h3>Style</h3>
+        <div class="prop-row">
+          <label>BG Color</label>
+          <input type="color" id="prop-bgcolor" value="#333333">
+        </div>
+        <div class="prop-row">
+          <label>Radius</label>
+          <input type="number" id="prop-radius" value="12">
+        </div>
+      </div>
+      <div class="prop-group" id="text-props">
+        <h3>Text</h3>
+        <div class="prop-row">
+          <label>Content</label>
+          <input type="text" id="prop-text">
+        </div>
+        <div class="prop-row">
+          <label>Font Size</label>
+          <input type="number" id="prop-fontsize" value="18">
+        </div>
+        <div class="prop-row">
+          <label>Color</label>
+          <input type="color" id="prop-textcolor" value="#FFFFFF">
+        </div>
+      </div>
+      <div class="prop-group" id="image-props" style="display: none;">
+        <h3>Image</h3>
+        <div class="prop-row">
+          <label>Source</label>
+          <input type="text" id="prop-imgsrc" placeholder="Drag asset here">
+        </div>
+      </div>
+      <div class="prop-group" id="button-props" style="display: none;">
+        <h3>Button Behavior</h3>
+        <div class="prop-row">
+          <label>Trigger</label>
+          <input type="text" id="prop-trigger" placeholder="e.g., On click: open shop">
+        </div>
+        <div id="hitbox-info" style="display: none; margin-top: 8px; padding: 8px; background: rgba(76, 175, 80, 0.2); border-radius: 6px; font-size: 11px;">
+          <span style="color: #4CAF50;">✓ Hitbox Active</span>
+          <div style="color: #888; margin-top: 4px;">Click detection follows asset outline</div>
+          <button class="btn-secondary" onclick="testHitbox()" style="margin-top: 6px; padding: 4px 8px; font-size: 10px;">Test Hitbox</button>
+          <button class="btn-secondary" onclick="visualizeHitbox()" style="margin-top: 6px; padding: 4px 8px; font-size: 10px;">Show Outline</button>
+        </div>
+      </div>
+      <button class="btn-secondary" onclick="deleteSelected()" style="background: #5c2020; border-color: #8b3030;">Delete Element</button>
+    </div>
+  </div>
+
+  <script>
+    const gemColors = [
+      'linear-gradient(135deg, #E74C3C, #C0392B)',
+      'linear-gradient(135deg, #3498DB, #2980B9)',
+      'linear-gradient(135deg, #2ECC71, #27AE60)',
+      'linear-gradient(135deg, #9B59B6, #8E44AD)',
+      'linear-gradient(135deg, #F1C40F, #F39C12)',
+      'linear-gradient(135deg, #ECF0F1, #BDC3C7)',
+    ];
+
+    let selectedElement = null;
+    let assets = [];
+    let isDragging = false;
+    let isResizing = false;
+    let dragOffset = { x: 0, y: 0 };
+    let resizeHandle = null;
+    let startRect = null;
+    let startMouse = null;
+
+    // Store hitbox data for image-based buttons
+    // Maps element ID -> { width, height, alphaData: Uint8Array }
+    const buttonHitboxes = new Map();
+
+    // Initialize gem grids
+    function initGems() {
+      // Menu gem preview
+      const preview = document.querySelector('.el-gem-preview');
+      if (preview) {
+        preview.innerHTML = '';
+        for (let i = 0; i < 15; i++) {
+          const gem = document.createElement('div');
+          gem.className = 'preview-gem';
+          gem.style.background = gemColors[i % gemColors.length];
+          preview.appendChild(gem);
+        }
+      }
+
+      // Board gems
+      const board = document.getElementById('board-grid');
+      if (board) {
+        board.innerHTML = '';
+        for (let i = 0; i < 64; i++) {
+          const gem = document.createElement('div');
+          gem.className = 'board-gem';
+          gem.style.background = gemColors[Math.floor(Math.random() * gemColors.length)];
+          board.appendChild(gem);
+        }
+      }
+
+      // Level grid
+      const levels = document.querySelector('.el-level-grid');
+      if (levels) {
+        levels.innerHTML = '';
+        for (let i = 1; i <= 30; i++) {
+          const node = document.createElement('div');
+          node.className = 'level-node';
+          if (i > 12) node.classList.add('locked');
+          if (i === 12) node.classList.add('current');
+          node.textContent = i;
+          levels.appendChild(node);
+        }
+      }
+    }
+
+    initGems();
+
+    // ==========================================
+    // PER-SCREEN STATE MANAGEMENT
+    // ==========================================
+    let currentScreen = 'menu';
+
+    const screenState = {
+      menu: {
+        'gift-width': 330, 'gift-height': 72,
+        'btn-width': 200, 'btn-height': 50
+      },
+      gameplay: {
+        'board-width': 338, 'board-height': 380, 'board-padding': 8,
+        'board-cols': 8, 'board-rows': 8,
+        'hud-height': 36, 'booster-size': 52
+      },
+      shop: {
+        'shop-card-height': 80
+      },
+      levels: {}
+    };
+
+    function saveCurrentScreenState() {
+      const sliders = [
+        'gift-width', 'gift-height', 'board-width', 'board-height',
+        'board-padding', 'board-cols', 'board-rows', 'hud-height',
+        'booster-size', 'shop-card-height', 'btn-width', 'btn-height'
+      ];
+      sliders.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          screenState[currentScreen][id] = parseInt(el.value);
+        }
+      });
+    }
+
+    function loadScreenState(screen) {
+      const state = screenState[screen] || {};
+      Object.entries(state).forEach(([id, value]) => {
+        const slider = document.getElementById(id);
+        const valSpan = document.getElementById(id + '-val');
+        if (slider) {
+          slider.value = value;
+          if (valSpan) valSpan.textContent = value;
+        }
+      });
+    }
+
+    // Screen tabs
+    document.querySelectorAll('.screen-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Save current screen state before switching
+        saveCurrentScreenState();
+
+        document.querySelectorAll('.screen-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+
+        currentScreen = tab.dataset.screen;
+        document.getElementById('screen-' + currentScreen).classList.add('active');
+
+        // Load new screen state
+        loadScreenState(currentScreen);
+
+        deselectElement();
+      });
+    });
+
+    // Section collapse
+    document.querySelectorAll('.section h2').forEach(h2 => {
+      h2.addEventListener('click', () => {
+        h2.parentElement.classList.toggle('collapsed');
+      });
+    });
+
+    // Color controls
+    document.getElementById('color-bg1').addEventListener('input', e => {
+      document.querySelectorAll('.phone-screen').forEach(s => {
+        s.style.background = `linear-gradient(180deg, ${e.target.value}, ${document.getElementById('color-bg2').value})`;
+      });
+    });
+
+    document.getElementById('color-bg2').addEventListener('input', e => {
+      document.querySelectorAll('.phone-screen').forEach(s => {
+        s.style.background = `linear-gradient(180deg, ${document.getElementById('color-bg1').value}, ${e.target.value})`;
+      });
+    });
+
+    // Element selection and dragging
+    document.querySelectorAll('.editable').forEach(el => {
+      setupEditable(el);
+    });
+
+    function setupEditable(el) {
+      el.addEventListener('mousedown', e => {
+        if (e.target.classList.contains('resize-handle')) return;
+        e.stopPropagation();
+        selectElement(el);
+
+        isDragging = true;
+        const rect = el.getBoundingClientRect();
+        const parentRect = el.parentElement.getBoundingClientRect();
+        dragOffset.x = e.clientX - rect.left;
+        dragOffset.y = e.clientY - rect.top;
+      });
+    }
+
+    function selectElement(el) {
+      if (selectedElement) {
+        selectedElement.classList.remove('selected');
+        // Remove resize handles
+        selectedElement.querySelectorAll('.resize-handle').forEach(h => h.remove());
+      }
+
+      selectedElement = el;
+      el.classList.add('selected');
+
+      // Add resize handles
+      ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].forEach(pos => {
+        const handle = document.createElement('div');
+        handle.className = `resize-handle ${pos}`;
+        handle.addEventListener('mousedown', e => {
+          e.stopPropagation();
+          isResizing = true;
+          resizeHandle = pos;
+          startRect = {
+            left: parseInt(el.style.left),
+            top: parseInt(el.style.top),
+            width: parseInt(el.style.width),
+            height: parseInt(el.style.height)
+          };
+          startMouse = { x: e.clientX, y: e.clientY };
+        });
+        el.appendChild(handle);
+      });
+
+      updatePropertiesPanel();
+    }
+
+    function deselectElement() {
+      if (selectedElement) {
+        selectedElement.classList.remove('selected');
+        selectedElement.querySelectorAll('.resize-handle').forEach(h => h.remove());
+        selectedElement = null;
+      }
+      document.getElementById('no-selection').style.display = 'block';
+      document.getElementById('prop-editor').style.display = 'none';
+    }
+
+    function updatePropertiesPanel() {
+      if (!selectedElement) return;
+
+      document.getElementById('no-selection').style.display = 'none';
+      document.getElementById('prop-editor').style.display = 'block';
+
+      document.getElementById('prop-x').value = parseInt(selectedElement.style.left) || 0;
+      document.getElementById('prop-y').value = parseInt(selectedElement.style.top) || 0;
+      document.getElementById('prop-width').value = parseInt(selectedElement.style.width) || 100;
+      document.getElementById('prop-height').value = parseInt(selectedElement.style.height) || 50;
+
+      const bg = selectedElement.style.backgroundColor;
+      if (bg) {
+        document.getElementById('prop-bgcolor').value = rgbToHex(bg);
+      }
+
+      document.getElementById('prop-radius').value = parseInt(selectedElement.style.borderRadius) || 12;
+      document.getElementById('prop-text').value = selectedElement.textContent.trim();
+      document.getElementById('prop-fontsize').value = parseInt(selectedElement.style.fontSize) || 18;
+
+      // Show/hide button properties
+      const isButton = selectedElement.dataset.type === 'button' || selectedElement.classList.contains('el-button');
+      const buttonProps = document.getElementById('button-props');
+      const hitboxInfo = document.getElementById('hitbox-info');
+
+      if (isButton) {
+        buttonProps.style.display = 'block';
+        document.getElementById('prop-trigger').value = selectedElement.dataset.trigger || '';
+
+        // Show hitbox info if this button has image-based hitbox
+        if (selectedElement.dataset.hasImageHitbox === 'true') {
+          hitboxInfo.style.display = 'block';
+        } else {
+          hitboxInfo.style.display = 'none';
+        }
+      } else {
+        buttonProps.style.display = 'none';
+      }
+    }
+
+    // Test hitbox by clicking
+    function testHitbox() {
+      if (!selectedElement || !selectedElement.dataset.elementId) return;
+      alert('Click anywhere on the button to test hitbox.\nGreen flash = hit detected\nRed flash = miss (transparent area)');
+      selectedElement.dataset.testingHitbox = 'true';
+    }
+
+    // Visualize hitbox by drawing outline on canvas
+    function visualizeHitbox() {
+      if (!selectedElement || !selectedElement.dataset.elementId) return;
+
+      const hitbox = buttonHitboxes.get(selectedElement.dataset.elementId);
+      if (!hitbox) {
+        alert('No hitbox data available');
+        return;
+      }
+
+      // Create overlay canvas
+      let overlay = selectedElement.querySelector('.hitbox-overlay');
+      if (overlay) {
+        overlay.remove();
+        return; // Toggle off
+      }
+
+      overlay = document.createElement('canvas');
+      overlay.className = 'hitbox-overlay';
+      overlay.width = parseInt(selectedElement.style.width);
+      overlay.height = parseInt(selectedElement.style.height);
+      overlay.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;';
+
+      const ctx = overlay.getContext('2d');
+      const scaleX = overlay.width / hitbox.width;
+      const scaleY = overlay.height / hitbox.height;
+
+      // Draw hitbox outline
+      ctx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+      for (let y = 0; y < hitbox.height; y++) {
+        for (let x = 0; x < hitbox.width; x++) {
+          if (hitbox.alphaData[y * hitbox.width + x] === 1) {
+            ctx.fillRect(x * scaleX, y * scaleY, scaleX, scaleY);
+          }
+        }
+      }
+
+      selectedElement.style.position = 'absolute'; // Ensure relative for overlay
+      selectedElement.appendChild(overlay);
+    }
+
+    // Property inputs
+    document.getElementById('prop-x').addEventListener('input', e => {
+      if (selectedElement) selectedElement.style.left = e.target.value + 'px';
+    });
+
+    document.getElementById('prop-y').addEventListener('input', e => {
+      if (selectedElement) selectedElement.style.top = e.target.value + 'px';
+    });
+
+    document.getElementById('prop-width').addEventListener('input', e => {
+      if (selectedElement) selectedElement.style.width = e.target.value + 'px';
+    });
+
+    document.getElementById('prop-height').addEventListener('input', e => {
+      if (selectedElement) selectedElement.style.height = e.target.value + 'px';
+    });
+
+    document.getElementById('prop-bgcolor').addEventListener('input', e => {
+      if (selectedElement) selectedElement.style.background = e.target.value;
+    });
+
+    document.getElementById('prop-radius').addEventListener('input', e => {
+      if (selectedElement) selectedElement.style.borderRadius = e.target.value + 'px';
+    });
+
+    document.getElementById('prop-text').addEventListener('input', e => {
+      if (selectedElement) {
+        // Preserve inner elements, just update text
+        const type = selectedElement.dataset.type;
+        if (type === 'button' || type === 'text') {
+          selectedElement.textContent = e.target.value;
+        }
+      }
+    });
+
+    document.getElementById('prop-fontsize').addEventListener('input', e => {
+      if (selectedElement) selectedElement.style.fontSize = e.target.value + 'px';
+    });
+
+    document.getElementById('prop-textcolor').addEventListener('input', e => {
+      if (selectedElement) selectedElement.style.color = e.target.value;
+    });
+
+    document.getElementById('prop-trigger').addEventListener('input', e => {
+      if (selectedElement) selectedElement.dataset.trigger = e.target.value;
+    });
+
+    // Handle clicks on buttons with hitbox detection
+    document.querySelectorAll('.game-screen').forEach(screen => {
+      screen.addEventListener('click', e => {
+        const target = e.target.closest('.editable');
+        if (!target) return;
+
+        // Check if this is a button with image hitbox
+        if (target.dataset.hasImageHitbox === 'true' && target.dataset.elementId) {
+          const hitbox = buttonHitboxes.get(target.dataset.elementId);
+          if (hitbox) {
+            const rect = target.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            const elemWidth = parseInt(target.style.width);
+            const elemHeight = parseInt(target.style.height);
+
+            const isHit = isPointInHitbox(hitbox, elemWidth, elemHeight, clickX, clickY);
+
+            if (target.dataset.testingHitbox === 'true') {
+              // Visual feedback for hitbox testing
+              if (isHit) {
+                target.style.boxShadow = '0 0 20px 5px rgba(76, 175, 80, 0.8)';
+                setTimeout(() => { target.style.boxShadow = ''; }, 300);
+              } else {
+                target.style.boxShadow = '0 0 20px 5px rgba(231, 76, 60, 0.8)';
+                setTimeout(() => { target.style.boxShadow = ''; }, 300);
+              }
+              target.dataset.testingHitbox = 'false';
+              return;
+            }
+
+            // Log hitbox result
+            console.log(`Button "${target.dataset.name}" clicked at (${clickX}, ${clickY}): ${isHit ? 'HIT' : 'MISS'}`);
+          }
+        }
+      });
+    });
+
+    // Mouse move for dragging and resizing
+    document.addEventListener('mousemove', e => {
+      if (isDragging && selectedElement) {
+        const parentRect = selectedElement.parentElement.getBoundingClientRect();
+        let newX = e.clientX - parentRect.left - dragOffset.x;
+        let newY = e.clientY - parentRect.top - dragOffset.y;
+
+        // Snap to edges
+        if (Math.abs(newX) < 10) newX = 0;
+        if (Math.abs(newY) < 10) newY = 0;
+        if (Math.abs(newX + parseInt(selectedElement.style.width) - 378) < 10) {
+          newX = 378 - parseInt(selectedElement.style.width);
+        }
+
+        selectedElement.style.left = newX + 'px';
+        selectedElement.style.top = newY + 'px';
+        updatePropertiesPanel();
+      }
+
+      if (isResizing && selectedElement && startRect && startMouse) {
+        const dx = e.clientX - startMouse.x;
+        const dy = e.clientY - startMouse.y;
+
+        let newLeft = startRect.left;
+        let newTop = startRect.top;
+        let newWidth = startRect.width;
+        let newHeight = startRect.height;
+
+        if (resizeHandle.includes('e')) newWidth = startRect.width + dx;
+        if (resizeHandle.includes('w')) { newWidth = startRect.width - dx; newLeft = startRect.left + dx; }
+        if (resizeHandle.includes('s')) newHeight = startRect.height + dy;
+        if (resizeHandle.includes('n')) { newHeight = startRect.height - dy; newTop = startRect.top + dy; }
+
+        if (newWidth > 20) {
+          selectedElement.style.width = newWidth + 'px';
+          selectedElement.style.left = newLeft + 'px';
+        }
+        if (newHeight > 20) {
+          selectedElement.style.height = newHeight + 'px';
+          selectedElement.style.top = newTop + 'px';
+        }
+
+        updatePropertiesPanel();
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      isResizing = false;
+      resizeHandle = null;
+      startRect = null;
+      startMouse = null;
+    });
+
+    // Click outside to deselect
+    document.getElementById('phone-screen').addEventListener('mousedown', e => {
+      if (e.target.id === 'phone-screen' || e.target.classList.contains('game-screen')) {
+        deselectElement();
+      }
+    });
+
+    // Asset upload - click to open file picker
+    document.getElementById('upload-zone').addEventListener('click', () => {
+      document.getElementById('asset-upload').click();
+    });
+
+    // Asset upload - drag files directly onto upload zone
+    const uploadZone = document.getElementById('upload-zone');
+    const assetLibrary = document.getElementById('asset-library');
+
+    uploadZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.style.borderColor = '#FFD700';
+      uploadZone.style.background = 'rgba(255, 215, 0, 0.1)';
+    });
+
+    uploadZone.addEventListener('dragleave', e => {
+      e.preventDefault();
+      uploadZone.style.borderColor = '#555';
+      uploadZone.style.background = '#1a1a1a';
+    });
+
+    uploadZone.addEventListener('drop', async e => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadZone.style.borderColor = '#555';
+      uploadZone.style.background = '#1a1a1a';
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        for (const file of files) {
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = async ev => {
+              const processedUrl = await removeBlackBackground(ev.target.result);
+              addAsset(processedUrl, file.name);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    });
+
+    // Also allow dropping files anywhere on the asset library section
+    assetLibrary.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    assetLibrary.addEventListener('drop', async e => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        for (const file of files) {
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = async ev => {
+              const processedUrl = await removeBlackBackground(ev.target.result);
+              addAsset(processedUrl, file.name);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    });
+
+    // Generate a unique ID for elements
+    let elementIdCounter = 1;
+    function generateElementId() {
+      return 'el_' + (elementIdCounter++);
+    }
+
+    // Compute hitbox from image alpha channel
+    // Returns an object with width, height, and alphaData (Uint8Array of 0/1 values)
+    function computeHitboxFromImage(dataUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+
+          // Create alpha map: 1 = clickable (alpha > 10), 0 = not clickable
+          const alphaData = new Uint8Array(canvas.width * canvas.height);
+          for (let i = 0; i < data.length; i += 4) {
+            const alpha = data[i + 3];
+            alphaData[i / 4] = alpha > 10 ? 1 : 0;
+          }
+
+          resolve({
+            width: canvas.width,
+            height: canvas.height,
+            alphaData: alphaData
+          });
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+      });
+    }
+
+    // Check if a point (relative to element) is within the hitbox
+    function isPointInHitbox(hitbox, elementWidth, elementHeight, pointX, pointY) {
+      if (!hitbox || !hitbox.alphaData) return true; // Fallback to full rect
+
+      // Scale point to original image coordinates
+      const scaleX = hitbox.width / elementWidth;
+      const scaleY = hitbox.height / elementHeight;
+
+      const imgX = Math.floor(pointX * scaleX);
+      const imgY = Math.floor(pointY * scaleY);
+
+      // Bounds check
+      if (imgX < 0 || imgX >= hitbox.width || imgY < 0 || imgY >= hitbox.height) {
+        return false;
+      }
+
+      const idx = imgY * hitbox.width + imgX;
+      return hitbox.alphaData[idx] === 1;
+    }
+
+    // Apply an asset image to a button element
+    async function applyAssetToButton(buttonEl, dataUrl) {
+      // Compute hitbox from the processed image
+      const hitbox = await computeHitboxFromImage(dataUrl);
+
+      // Ensure element has an ID
+      if (!buttonEl.dataset.elementId) {
+        buttonEl.dataset.elementId = generateElementId();
+      }
+
+      // Store hitbox data
+      if (hitbox) {
+        buttonHitboxes.set(buttonEl.dataset.elementId, hitbox);
+      }
+
+      // Apply the image to the button
+      buttonEl.style.backgroundImage = `url(${dataUrl})`;
+      buttonEl.style.backgroundSize = 'contain';
+      buttonEl.style.backgroundRepeat = 'no-repeat';
+      buttonEl.style.backgroundPosition = 'center';
+      buttonEl.style.background = `url(${dataUrl}) center/contain no-repeat`;
+      buttonEl.textContent = ''; // Remove text
+      buttonEl.dataset.hasImageHitbox = 'true';
+      buttonEl.dataset.imageUrl = dataUrl;
+
+      // Visual indicator that this button has hitbox detection
+      console.log(`Hitbox applied to ${buttonEl.dataset.name}: ${hitbox.width}x${hitbox.height}px`);
+    }
+
+    // Smart background removal - samples corners and removes similar colors
+    function removeBlackBackground(dataUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          const w = canvas.width;
+          const h = canvas.height;
+
+          // Sample corners to find background color
+          const corners = [
+            0,                           // top-left
+            (w - 1) * 4,                 // top-right
+            (h - 1) * w * 4,             // bottom-left
+            ((h - 1) * w + (w - 1)) * 4  // bottom-right
+          ];
+
+          // Get average color of corners
+          let bgR = 0, bgG = 0, bgB = 0;
+          corners.forEach(i => {
+            bgR += data[i];
+            bgG += data[i + 1];
+            bgB += data[i + 2];
+          });
+          bgR = Math.round(bgR / 4);
+          bgG = Math.round(bgG / 4);
+          bgB = Math.round(bgB / 4);
+
+          // Color distance function
+          function colorDistance(r, g, b) {
+            return Math.sqrt(
+              Math.pow(r - bgR, 2) +
+              Math.pow(g - bgG, 2) +
+              Math.pow(b - bgB, 2)
+            );
+          }
+
+          // Tolerance for background removal (adjust for glow effects)
+          const tolerance = 60;
+
+          // Also check if it's a dark color (for glows)
+          function isDark(r, g, b) {
+            return (r + g + b) / 3 < 80;
+          }
+
+          // Process each pixel
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            const dist = colorDistance(r, g, b);
+
+            // Remove if similar to background color OR if very dark
+            if (dist < tolerance || (isDark(r, g, b) && dist < tolerance * 1.5)) {
+              // Fade out based on distance for smoother edges
+              if (dist < tolerance * 0.5) {
+                data[i + 3] = 0; // Fully transparent
+              } else {
+                // Partial transparency for edge smoothing
+                const alpha = Math.min(255, (dist / tolerance) * 255);
+                data[i + 3] = Math.round(alpha);
+              }
+            }
+          }
+
+          ctx.putImageData(imageData, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(dataUrl); // Fallback to original
+        img.src = dataUrl;
+      });
+    }
+
+    document.getElementById('asset-upload').addEventListener('change', e => {
+      Array.from(e.target.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = async ev => {
+          // Process image to remove black background
+          const processedUrl = await removeBlackBackground(ev.target.result);
+          addAsset(processedUrl, file.name);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    function addAsset(dataUrl, name) {
+      assets.push({ dataUrl, name });
+
+      const library = document.getElementById('asset-library');
+      const item = document.createElement('div');
+      item.className = 'asset-item';
+      item.draggable = true;
+      item.innerHTML = `<img src="${dataUrl}" alt="${name}"><button class="delete-btn">×</button>`;
+
+      item.querySelector('.delete-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        const idx = assets.findIndex(a => a.dataUrl === dataUrl);
+        if (idx > -1) assets.splice(idx, 1);
+        item.remove();
+      });
+
+      item.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', dataUrl);
+        e.dataTransfer.setData('asset-name', name);
+      });
+
+      library.insertBefore(item, document.getElementById('upload-zone'));
+    }
+
+    // Drop on phone screen
+    const phoneScreen = document.getElementById('phone-screen');
+
+    phoneScreen.addEventListener('dragover', e => {
+      e.preventDefault();
+      phoneScreen.classList.add('drag-over');
+    });
+
+    phoneScreen.addEventListener('dragleave', () => {
+      phoneScreen.classList.remove('drag-over');
+    });
+
+    phoneScreen.addEventListener('drop', async e => {
+      e.preventDefault();
+      phoneScreen.classList.remove('drag-over');
+
+      // Check if files were dropped directly from file system
+      const files = e.dataTransfer.files;
+      let dataUrl = e.dataTransfer.getData('text/plain');
+      let name = e.dataTransfer.getData('asset-name') || 'Dropped Image';
+
+      if (files.length > 0 && files[0].type.startsWith('image/')) {
+        // Process file from file system
+        const file = files[0];
+        name = file.name;
+        dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = async ev => {
+            const processedUrl = await removeBlackBackground(ev.target.result);
+            resolve(processedUrl);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (dataUrl && dataUrl.startsWith('data:image')) {
+        const activeScreen = document.querySelector('.game-screen.active');
+        const rect = activeScreen.getBoundingClientRect();
+        const dropX = e.clientX - rect.left;
+        const dropY = e.clientY - rect.top;
+
+        // Check if dropping on an existing button
+        const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
+        const buttonEl = elementsAtPoint.find(el =>
+          el.classList.contains('editable') &&
+          (el.dataset.type === 'button' || el.classList.contains('el-button'))
+        );
+
+        if (buttonEl) {
+          // Apply asset to existing button with hitbox detection
+          await applyAssetToButton(buttonEl, dataUrl);
+          selectElement(buttonEl);
+          console.log(`Asset "${name}" applied to button "${buttonEl.dataset.name}" with hitbox detection`);
+        }
+        // Check if dropping on a gem or booster element
+        else if (elementsAtPoint.some(el => el.dataset.type === 'gem' || el.classList.contains('gem-cell'))) {
+          const gemEl = elementsAtPoint.find(el => el.dataset.type === 'gem' || el.classList.contains('gem-cell'));
+          gemEl.style.background = `url(${dataUrl}) center/contain no-repeat`;
+          gemEl.dataset.hasCustomAsset = 'true';
+          selectElement(gemEl);
+          console.log(`Asset "${name}" applied to gem at ${gemEl.dataset.row},${gemEl.dataset.col}`);
+        }
+        else if (elementsAtPoint.some(el => el.dataset.type === 'booster' || el.classList.contains('booster-cell'))) {
+          const boosterEl = elementsAtPoint.find(el => el.dataset.type === 'booster' || el.classList.contains('booster-cell'));
+          boosterEl.innerHTML = '';
+          boosterEl.style.background = `url(${dataUrl}) center/contain no-repeat`;
+          boosterEl.dataset.hasCustomAsset = 'true';
+          selectElement(boosterEl);
+          console.log(`Asset "${name}" applied to booster "${boosterEl.dataset.boosterType}"`);
+        }
+        else {
+          // Create a new image element
+          const img = document.createElement('div');
+          img.className = 'editable';
+          img.dataset.name = name;
+          img.dataset.type = 'image';
+          img.dataset.elementId = generateElementId();
+          img.style.cssText = `
+            left: ${dropX - 50}px;
+            top: ${dropY - 50}px;
+            width: 100px;
+            height: 100px;
+            background-image: url(${dataUrl});
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+          `;
+
+          activeScreen.appendChild(img);
+          setupEditable(img);
+          selectElement(img);
+        }
+      }
+    });
+
+    // Add element
+    function addElement(type) {
+      const activeScreen = document.querySelector('.game-screen.active');
+      const el = document.createElement('div');
+      el.className = 'editable';
+      el.dataset.type = type;
+
+      switch(type) {
+        case 'button':
+          el.className += ' el-button';
+          el.dataset.name = 'New Button';
+          el.textContent = 'BUTTON';
+          el.style.cssText = 'left: 100px; top: 300px; width: 180px; height: 50px;';
+          break;
+        case 'text':
+          el.dataset.name = 'New Text';
+          el.textContent = 'Text';
+          el.style.cssText = 'left: 100px; top: 300px; width: 180px; height: 40px; color: white; font-size: 24px; display: flex; align-items: center; justify-content: center;';
+          break;
+        case 'box':
+          el.dataset.name = 'New Box';
+          el.style.cssText = 'left: 100px; top: 300px; width: 150px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 12px;';
+          break;
+        case 'image':
+          el.dataset.name = 'New Image';
+          el.style.cssText = 'left: 100px; top: 300px; width: 100px; height: 100px; background: #333; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px;';
+          el.textContent = 'Drop image';
+          break;
+      }
+
+      activeScreen.appendChild(el);
+      setupEditable(el);
+      selectElement(el);
+    }
+
+    function deleteSelected() {
+      if (selectedElement && confirm('Delete this element?')) {
+        selectedElement.remove();
+        deselectElement();
+      }
+    }
+
+    function exportDesign() {
+      const data = { screens: {}, assets: [] };
+
+      // Export assets
+      assets.forEach((asset, i) => {
+        data.assets.push({
+          id: 'asset_' + i,
+          name: asset.name,
+          dataUrl: asset.dataUrl
+        });
+      });
+
+      document.querySelectorAll('.game-screen').forEach(screen => {
+        const screenId = screen.id.replace('screen-', '');
+        data.screens[screenId] = [];
+
+        screen.querySelectorAll('.editable').forEach(el => {
+          const elementData = {
+            id: el.dataset.elementId || null,
+            name: el.dataset.name,
+            type: el.dataset.type,
+            x: parseInt(el.style.left),
+            y: parseInt(el.style.top),
+            width: parseInt(el.style.width),
+            height: parseInt(el.style.height),
+            text: el.textContent.trim(),
+            background: el.style.background || el.style.backgroundImage,
+            borderRadius: parseInt(el.style.borderRadius) || 0,
+          };
+
+          // Add button-specific data
+          if (el.dataset.type === 'button' || el.classList.contains('el-button')) {
+            elementData.trigger = el.dataset.trigger || '';
+            elementData.hasImageHitbox = el.dataset.hasImageHitbox === 'true';
+            elementData.imageUrl = el.dataset.imageUrl || null;
+
+            // Include hitbox bounds (not full data - that's too large)
+            if (el.dataset.elementId && buttonHitboxes.has(el.dataset.elementId)) {
+              const hitbox = buttonHitboxes.get(el.dataset.elementId);
+              elementData.hitboxDimensions = {
+                width: hitbox.width,
+                height: hitbox.height
+              };
+            }
+          }
+
+          // Add gem/booster specific data
+          if (el.dataset.gemColor) {
+            elementData.gemColor = el.dataset.gemColor;
+          }
+          if (el.dataset.boosterType) {
+            elementData.boosterType = el.dataset.boosterType;
+          }
+          if (el.dataset.groupId) {
+            elementData.groupId = el.dataset.groupId;
+          }
+
+          data.screens[screenId].push(elementData);
+        });
+      });
+
+      const json = JSON.stringify(data, null, 2);
+      console.log(json);
+
+      // Download
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'gem-link-design.json';
+      a.click();
+
+      alert('Design exported! Check console for JSON output.');
+    }
+
+    function resetDesign() {
+      if (confirm('Reset all changes?')) {
+        location.reload();
+      }
+    }
+
+    function rgbToHex(rgb) {
+      if (rgb.startsWith('#')) return rgb;
+      const match = rgb.match(/\d+/g);
+      if (!match) return '#333333';
+      return '#' + match.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+    }
+
+    // ==========================================
+    // COMPONENT SIZE SLIDERS - Direct Controls
+    // ==========================================
+
+    function setupSlider(sliderId, valId, callback) {
+      const slider = document.getElementById(sliderId);
+      const valSpan = document.getElementById(valId);
+      if (slider) {
+        slider.addEventListener('input', e => {
+          const val = e.target.value;
+          if (valSpan) valSpan.textContent = val;
+          // Save to current screen state
+          screenState[currentScreen][sliderId] = parseInt(val);
+          callback(parseInt(val));
+        });
+      }
+    }
+
+    // Free Gift Banner
+    setupSlider('gift-width', 'gift-width-val', val => {
+      const el = document.querySelector('.el-gift-banner');
+      if (el) {
+        el.style.width = val + 'px';
+        // Center it
+        el.style.left = ((378 - val) / 2) + 'px';
+      }
+    });
+
+    setupSlider('gift-height', 'gift-height-val', val => {
+      const el = document.querySelector('.el-gift-banner');
+      if (el) el.style.height = val + 'px';
+    });
+
+    // Game Board
+    setupSlider('board-width', 'board-width-val', val => {
+      const el = document.querySelector('.el-board');
+      if (el) {
+        el.style.width = val + 'px';
+        el.style.left = ((378 - val) / 2) + 'px';
+      }
+    });
+
+    setupSlider('board-height', 'board-height-val', val => {
+      const el = document.querySelector('.el-board');
+      if (el) el.style.height = val + 'px';
+    });
+
+    setupSlider('board-padding', 'board-padding-val', val => {
+      const el = document.querySelector('.el-board');
+      if (el) el.style.padding = val + 'px';
+    });
+
+    setupSlider('board-cols', 'board-cols-val', val => {
+      const grid = document.getElementById('board-grid');
+      if (grid) {
+        grid.style.gridTemplateColumns = `repeat(${val}, 1fr)`;
+        regenerateBoard();
+      }
+    });
+
+    setupSlider('board-rows', 'board-rows-val', val => {
+      regenerateBoard();
+    });
+
+    function regenerateBoard() {
+      const grid = document.getElementById('board-grid');
+      if (!grid) return;
+      const cols = parseInt(document.getElementById('board-cols')?.value) || 8;
+      const rows = parseInt(document.getElementById('board-rows')?.value) || 8;
+      grid.innerHTML = '';
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      for (let i = 0; i < rows * cols; i++) {
+        const gem = document.createElement('div');
+        gem.className = 'board-gem';
+        gem.style.background = gemColors[Math.floor(Math.random() * gemColors.length)];
+        grid.appendChild(gem);
+      }
+    }
+
+    // HUD
+    setupSlider('hud-height', 'hud-height-val', val => {
+      const el = document.querySelector('.el-hud');
+      if (el) el.style.height = val + 'px';
+      document.querySelectorAll('.hud-item').forEach(item => {
+        item.style.height = (val - 4) + 'px';
+      });
+    });
+
+    // Boosters
+    setupSlider('booster-size', 'booster-size-val', val => {
+      document.querySelectorAll('.booster-btn').forEach(btn => {
+        btn.style.width = val + 'px';
+        btn.style.height = val + 'px';
+      });
+      // Update tray width
+      const tray = document.querySelector('.el-booster-tray');
+      if (tray) {
+        const count = tray.querySelectorAll('.booster-btn').length;
+        tray.style.width = (val * count + 12 * (count - 1)) + 'px';
+        tray.style.height = val + 'px';
+      }
+    });
+
+    // Shop Cards
+    setupSlider('shop-card-height', 'shop-card-height-val', val => {
+      document.querySelectorAll('.el-shop-card').forEach((card, i) => {
+        card.style.height = val + 'px';
+        // Reposition cards vertically
+        card.style.top = (120 + i * (val + 12)) + 'px';
+      });
+    });
+
+    // Buttons
+    setupSlider('btn-width', 'btn-width-val', val => {
+      document.querySelectorAll('.el-button').forEach(btn => {
+        btn.style.width = val + 'px';
+        // Center buttons
+        btn.style.left = ((378 - val) / 2) + 'px';
+      });
+    });
+
+    setupSlider('btn-height', 'btn-height-val', val => {
+      const buttons = document.querySelectorAll('.el-button');
+      buttons.forEach((btn, i) => {
+        btn.style.height = val + 'px';
+      });
+      // Reposition second button
+      if (buttons.length > 1) {
+        buttons[1].style.top = (parseInt(buttons[0].style.top) + val + 15) + 'px';
+      }
+    });
+
+    // ==========================================
+    // GEM & BOOSTER ASSET MAPPING
+    // ==========================================
+
+    const gemAssetMap = {
+      red: null,
+      blue: null,
+      green: null,
+      purple: null,
+      yellow: null,
+      white: null
+    };
+
+    const boosterAssetMap = {
+      hammer: null,
+      bomb: null,
+      rainbow: null
+    };
+
+    const gemColorToKey = {
+      'linear-gradient(135deg, #E74C3C, #C0392B)': 'red',
+      'linear-gradient(135deg, rgb(231, 76, 60), rgb(192, 57, 43))': 'red',
+      'linear-gradient(135deg, #3498DB, #2980B9)': 'blue',
+      'linear-gradient(135deg, rgb(52, 152, 219), rgb(41, 128, 185))': 'blue',
+      'linear-gradient(135deg, #2ECC71, #27AE60)': 'green',
+      'linear-gradient(135deg, rgb(46, 204, 113), rgb(39, 174, 96))': 'green',
+      'linear-gradient(135deg, #9B59B6, #8E44AD)': 'purple',
+      'linear-gradient(135deg, rgb(155, 89, 182), rgb(142, 68, 173))': 'purple',
+      'linear-gradient(135deg, #F1C40F, #F39C12)': 'yellow',
+      'linear-gradient(135deg, rgb(241, 196, 15), rgb(243, 156, 18))': 'yellow',
+      'linear-gradient(135deg, #ECF0F1, #BDC3C7)': 'white',
+      'linear-gradient(135deg, rgb(236, 240, 241), rgb(189, 195, 199))': 'white'
+    };
+
+    // Setup drag-and-drop for gem color slots
+    document.querySelectorAll('.gem-map-slot').forEach(slot => {
+      slot.addEventListener('dragover', e => {
+        e.preventDefault();
+        slot.style.borderColor = '#FFD700';
+      });
+      slot.addEventListener('dragleave', () => {
+        slot.style.borderColor = gemAssetMap[slot.dataset.color] ? '#4CAF50' : '#555';
+      });
+      slot.addEventListener('drop', async e => {
+        e.preventDefault();
+
+        let dataUrl = e.dataTransfer.getData('text/plain');
+
+        // Check if files were dropped directly from file system
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type.startsWith('image/')) {
+          const file = files[0];
+          dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = async ev => {
+              const processedUrl = await removeBlackBackground(ev.target.result);
+              resolve(processedUrl);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+
+        if (dataUrl && dataUrl.startsWith('data:image')) {
+          gemAssetMap[slot.dataset.color] = dataUrl;
+          slot.style.backgroundImage = `url(${dataUrl})`;
+          slot.style.backgroundSize = 'contain';
+          slot.style.backgroundRepeat = 'no-repeat';
+          slot.style.backgroundPosition = 'center';
+          slot.style.borderColor = '#4CAF50';
+          slot.style.borderStyle = 'solid';
+          console.log(`Mapped ${slot.dataset.color} gem to asset`);
+        }
+      });
+    });
+
+    // Setup drag-and-drop for booster slots
+    document.querySelectorAll('.booster-map-slot').forEach(slot => {
+      slot.addEventListener('dragover', e => {
+        e.preventDefault();
+        slot.style.borderColor = '#FFD700';
+      });
+      slot.addEventListener('dragleave', () => {
+        slot.style.borderColor = boosterAssetMap[slot.dataset.booster] ? '#4CAF50' : '#555';
+      });
+      slot.addEventListener('drop', async e => {
+        e.preventDefault();
+
+        let dataUrl = e.dataTransfer.getData('text/plain');
+
+        // Check if files were dropped directly from file system
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type.startsWith('image/')) {
+          const file = files[0];
+          dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = async ev => {
+              const processedUrl = await removeBlackBackground(ev.target.result);
+              resolve(processedUrl);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+
+        if (dataUrl && dataUrl.startsWith('data:image')) {
+          boosterAssetMap[slot.dataset.booster] = dataUrl;
+          slot.innerHTML = '';
+          slot.style.backgroundImage = `url(${dataUrl})`;
+          slot.style.backgroundSize = 'contain';
+          slot.style.backgroundRepeat = 'no-repeat';
+          slot.style.backgroundPosition = 'center';
+          slot.style.borderColor = '#4CAF50';
+          slot.style.borderStyle = 'solid';
+          console.log(`Mapped ${slot.dataset.booster} booster to asset`);
+        }
+      });
+    });
+
+    // Apply gem assets to all board gems
+    function applyGemAssetsToBoard() {
+      const board = document.getElementById('board-grid');
+      if (!board) return;
+
+      const gems = board.querySelectorAll('.board-gem');
+      gems.forEach(gem => {
+        const bgStyle = gem.style.background;
+        const colorKey = gemColorToKey[bgStyle];
+        if (colorKey && gemAssetMap[colorKey]) {
+          gem.style.backgroundImage = `url(${gemAssetMap[colorKey]})`;
+          gem.style.backgroundSize = 'contain';
+          gem.style.backgroundRepeat = 'no-repeat';
+          gem.style.backgroundPosition = 'center';
+          gem.style.background = `url(${gemAssetMap[colorKey]}) center/contain no-repeat`;
+          gem.dataset.gemColor = colorKey;
+        }
+      });
+
+      // Also apply to menu preview gems
+      const previewGems = document.querySelectorAll('.preview-gem');
+      previewGems.forEach(gem => {
+        const bgStyle = gem.style.background;
+        const colorKey = gemColorToKey[bgStyle];
+        if (colorKey && gemAssetMap[colorKey]) {
+          gem.style.background = `url(${gemAssetMap[colorKey]}) center/contain no-repeat`;
+        }
+      });
+
+      console.log('Applied gem assets to board');
+    }
+
+    // Apply booster assets
+    function applyBoosterAssets() {
+      const boosters = document.querySelectorAll('.booster-btn');
+      const boosterTypes = ['hammer', 'bomb', 'rainbow'];
+
+      boosters.forEach((btn, i) => {
+        const type = boosterTypes[i];
+        if (boosterAssetMap[type]) {
+          btn.innerHTML = '';
+          btn.style.backgroundImage = `url(${boosterAssetMap[type]})`;
+          btn.style.backgroundSize = 'contain';
+          btn.style.backgroundRepeat = 'no-repeat';
+          btn.style.backgroundPosition = 'center';
+          btn.dataset.boosterType = type;
+        }
+      });
+
+      console.log('Applied booster assets');
+    }
+
+    // Clear gem asset mappings
+    function clearGemAssets() {
+      Object.keys(gemAssetMap).forEach(key => {
+        gemAssetMap[key] = null;
+      });
+
+      document.querySelectorAll('.gem-map-slot').forEach(slot => {
+        const color = slot.dataset.color;
+        const defaultGradients = {
+          red: 'linear-gradient(135deg, #E74C3C, #C0392B)',
+          blue: 'linear-gradient(135deg, #3498DB, #2980B9)',
+          green: 'linear-gradient(135deg, #2ECC71, #27AE60)',
+          purple: 'linear-gradient(135deg, #9B59B6, #8E44AD)',
+          yellow: 'linear-gradient(135deg, #F1C40F, #F39C12)',
+          white: 'linear-gradient(135deg, #ECF0F1, #BDC3C7)'
+        };
+        slot.style.background = defaultGradients[color];
+        slot.style.backgroundImage = '';
+        slot.style.borderColor = '#555';
+        slot.style.borderStyle = 'dashed';
+      });
+
+      // Regenerate board with default colors
+      regenerateBoard();
+      initGems();
+
+      console.log('Cleared gem asset mappings');
+    }
+
+    // Convert board gems to individual editable elements
+    function convertBoardToElements() {
+      const boardContainer = document.querySelector('.el-board');
+      const boardGrid = document.getElementById('board-grid');
+      if (!boardContainer || !boardGrid) return;
+
+      const containerRect = boardContainer.getBoundingClientRect();
+      const screenRect = document.getElementById('screen-gameplay').getBoundingClientRect();
+
+      const cols = parseInt(document.getElementById('board-cols')?.value) || 8;
+      const rows = parseInt(document.getElementById('board-rows')?.value) || 8;
+
+      const padding = parseInt(boardContainer.style.padding) || 8;
+      const innerWidth = parseInt(boardContainer.style.width) - padding * 2;
+      const innerHeight = parseInt(boardContainer.style.height) - padding * 2;
+
+      const cellWidth = innerWidth / cols;
+      const cellHeight = innerHeight / rows;
+
+      const boardLeft = parseInt(boardContainer.style.left);
+      const boardTop = parseInt(boardContainer.style.top);
+
+      // Group ID for all board gems
+      const groupId = 'board_' + Date.now();
+
+      const gems = boardGrid.querySelectorAll('.board-gem');
+      gems.forEach((gem, i) => {
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+
+        const x = boardLeft + padding + col * cellWidth + 2;
+        const y = boardTop + padding + row * cellHeight + 2;
+
+        gem.classList.add('editable', 'gem-cell');
+        gem.dataset.name = `Gem ${row},${col}`;
+        gem.dataset.type = 'gem';
+        gem.dataset.groupId = groupId;
+        gem.dataset.row = row;
+        gem.dataset.col = col;
+        gem.dataset.elementId = generateElementId();
+        gem.style.position = 'absolute';
+        gem.style.left = x + 'px';
+        gem.style.top = y + 'px';
+        gem.style.width = (cellWidth - 4) + 'px';
+        gem.style.height = (cellHeight - 4) + 'px';
+
+        setupEditable(gem);
+      });
+
+      console.log(`Converted ${gems.length} gems to individual elements (group: ${groupId})`);
+    }
+
+    // Convert boosters to individual editable elements
+    function convertBoostersToElements() {
+      const boosterTray = document.querySelector('.el-booster-tray');
+      if (!boosterTray) return;
+
+      const boosterTypes = ['hammer', 'bomb', 'rainbow'];
+      const boosters = boosterTray.querySelectorAll('.booster-btn');
+
+      const trayLeft = parseInt(boosterTray.style.left);
+      const trayTop = parseInt(boosterTray.style.top);
+      const boosterSize = parseInt(document.getElementById('booster-size')?.value) || 52;
+
+      boosters.forEach((btn, i) => {
+        const x = trayLeft + i * (boosterSize + 12);
+        const y = trayTop;
+
+        btn.classList.add('editable', 'booster-cell');
+        btn.dataset.name = `Booster: ${boosterTypes[i]}`;
+        btn.dataset.type = 'booster';
+        btn.dataset.boosterType = boosterTypes[i];
+        btn.dataset.elementId = generateElementId();
+
+        setupEditable(btn);
+      });
+
+      console.log('Converted boosters to individual elements');
+    }
+
+    console.log('Gem Link Designer loaded!');
+    console.log('- Click elements to select and edit');
+    console.log('- Drag corners/edges to resize');
+    console.log('- Upload assets and drag them onto the preview');
+    console.log('- Drag assets to gem color slots to map them');
+    console.log('- Use Component Sizes sliders for quick adjustments');
+  </script>
+</body>
+</html>

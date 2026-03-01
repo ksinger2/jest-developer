@@ -1,0 +1,392 @@
+[
+  {
+    "id": 1,
+    "name": "First Steps",
+    "moveLimit": 18,
+    "starThresholds": [1500, 3000, 5500],
+    "seed": "level_001_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": [],
+    "objectives": {
+      "type": "score",
+      "target": 1500
+    }
+  },
+  {
+    "id": 2,
+    "name": "Getting Warmer",
+    "moveLimit": 17,
+    "starThresholds": [1600, 3200, 5800],
+    "seed": "level_002_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": [],
+    "objectives": {
+      "type": "score",
+      "target": 1600
+    }
+  },
+  {
+    "id": 3,
+    "name": "Cascade Valley",
+    "moveLimit": 16,
+    "starThresholds": [1800, 3500, 6200],
+    "seed": "level_003_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": [],
+    "objectives": {
+      "type": "score",
+      "target": 1800
+    }
+  },
+  {
+    "id": 4,
+    "name": "Line Up",
+    "moveLimit": 15,
+    "starThresholds": [2000, 3800, 6800],
+    "seed": "level_004_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear"],
+    "objectives": {
+      "type": "score",
+      "target": 2000
+    }
+  },
+  {
+    "id": 5,
+    "name": "Clear Skies",
+    "moveLimit": 15,
+    "starThresholds": [2200, 4200, 7500],
+    "seed": "level_005_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear"],
+    "objectives": {
+      "type": "score",
+      "target": 2200
+    }
+  },
+  {
+    "id": 6,
+    "name": "Gem Garden",
+    "moveLimit": 14,
+    "starThresholds": [2400, 4500, 8000],
+    "seed": "level_006_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear"],
+    "objectives": {
+      "type": "score",
+      "target": 2400
+    }
+  },
+  {
+    "id": 7,
+    "name": "Sparkling Stream",
+    "moveLimit": 13,
+    "starThresholds": [2200, 4200, 7500],
+    "seed": "level_007_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear"],
+    "objectives": {
+      "type": "score",
+      "target": 2200
+    }
+  },
+  {
+    "id": 8,
+    "name": "Blast Zone",
+    "moveLimit": 13,
+    "starThresholds": [2600, 5000, 9000],
+    "seed": "level_008_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear", "bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2600
+    }
+  },
+  {
+    "id": 9,
+    "name": "Double Trouble",
+    "moveLimit": 12,
+    "starThresholds": [2400, 4800, 8500],
+    "seed": "level_009_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear", "bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2400
+    }
+  },
+  {
+    "id": 10,
+    "name": "Crystal Clash",
+    "moveLimit": 12,
+    "starThresholds": [3000, 5500, 10000],
+    "seed": "level_010_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear", "bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3000
+    }
+  },
+  {
+    "id": 11,
+    "name": "Prismatic Burst",
+    "moveLimit": 13,
+    "starThresholds": [3200, 6000, 10500],
+    "seed": "level_011_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3200
+    }
+  },
+  {
+    "id": 12,
+    "name": "Rainbow Road",
+    "moveLimit": 12,
+    "starThresholds": [3000, 5800, 10000],
+    "seed": "level_012_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3000
+    }
+  },
+  {
+    "id": 13,
+    "name": "Gentle Glow",
+    "moveLimit": 13,
+    "starThresholds": [2800, 5500, 9500],
+    "seed": "level_013_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2800
+    }
+  },
+  {
+    "id": 14,
+    "name": "Rising Tide",
+    "moveLimit": 11,
+    "starThresholds": [3200, 6200, 11000],
+    "seed": "level_014_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3200
+    }
+  },
+  {
+    "id": 15,
+    "name": "Storm Front",
+    "moveLimit": 10,
+    "starThresholds": [3000, 6000, 10500],
+    "seed": "level_015_v1",
+    "colorCount": 5,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3000
+    }
+  },
+  {
+    "id": 16,
+    "name": "New Horizons",
+    "moveLimit": 12,
+    "starThresholds": [2800, 5200, 9500],
+    "seed": "level_016_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2800
+    }
+  },
+  {
+    "id": 17,
+    "name": "Deep Current",
+    "moveLimit": 11,
+    "starThresholds": [2600, 5000, 9000],
+    "seed": "level_017_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2600
+    }
+  },
+  {
+    "id": 18,
+    "name": "Calm Waters",
+    "moveLimit": 12,
+    "starThresholds": [2400, 4800, 8500],
+    "seed": "level_018_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2400
+    }
+  },
+  {
+    "id": 19,
+    "name": "Ember Glow",
+    "moveLimit": 10,
+    "starThresholds": [2800, 5200, 9500],
+    "seed": "level_019_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2800
+    }
+  },
+  {
+    "id": 20,
+    "name": "Inferno",
+    "moveLimit": 9,
+    "starThresholds": [2600, 5000, 9000],
+    "seed": "level_020_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2600
+    }
+  },
+  {
+    "id": 21,
+    "name": "Frost Peak",
+    "moveLimit": 10,
+    "starThresholds": [3000, 5500, 10000],
+    "seed": "level_021_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3000
+    }
+  },
+  {
+    "id": 22,
+    "name": "Twilight Summit",
+    "moveLimit": 9,
+    "starThresholds": [2800, 5200, 9500],
+    "seed": "level_022_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2800
+    }
+  },
+  {
+    "id": 23,
+    "name": "Moonlit Clearing",
+    "moveLimit": 11,
+    "starThresholds": [2600, 5000, 9000],
+    "seed": "level_023_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2600
+    }
+  },
+  {
+    "id": 24,
+    "name": "Starfall",
+    "moveLimit": 8,
+    "starThresholds": [2800, 5200, 9500],
+    "seed": "level_024_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2800
+    }
+  },
+  {
+    "id": 25,
+    "name": "Void's Edge",
+    "moveLimit": 8,
+    "starThresholds": [3000, 5800, 10500],
+    "seed": "level_025_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3000
+    }
+  },
+  {
+    "id": 26,
+    "name": "Obsidian Gate",
+    "moveLimit": 9,
+    "starThresholds": [3200, 6000, 11000],
+    "seed": "level_026_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3200
+    }
+  },
+  {
+    "id": 27,
+    "name": "Oasis",
+    "moveLimit": 10,
+    "starThresholds": [2800, 5500, 10000],
+    "seed": "level_027_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 2800
+    }
+  },
+  {
+    "id": 28,
+    "name": "Crimson Peak",
+    "moveLimit": 8,
+    "starThresholds": [3200, 6200, 11500],
+    "seed": "level_028_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3200
+    }
+  },
+  {
+    "id": 29,
+    "name": "Abyssal Depths",
+    "moveLimit": 7,
+    "starThresholds": [3000, 6000, 11000],
+    "seed": "level_029_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3000
+    }
+  },
+  {
+    "id": 30,
+    "name": "Final Clash",
+    "moveLimit": 7,
+    "starThresholds": [3500, 6500, 12000],
+    "seed": "level_030_v1",
+    "colorCount": 6,
+    "specialGemUnlocks": ["line_clear", "bomb", "color_bomb"],
+    "objectives": {
+      "type": "score",
+      "target": 3500
+    }
+  }
+]

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TASK-004 | Fetch Spike Test — Gem Link</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 15px; }
+    body {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", Menlo, Consolas, monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 1.5rem;
+    }
+    header h1 {
+      font-size: 1.6rem;
+      color: #58a6ff;
+      margin-bottom: 0.3rem;
+    }
+    header p {
+      font-size: 0.85rem;
+      color: #8b949e;
+    }
+    header .tag {
+      display: inline-block;
+      background: #1f2937;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.75rem;
+      color: #f0883e;
+      margin-top: 0.5rem;
+    }
+
+    /* ── Controls ──────────────────────────────────────────── */
+    .controls {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    button {
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 0.6rem 1.8rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #btn-run {
+      background: #238636;
+      color: #fff;
+    }
+    #btn-clear {
+      background: #30363d;
+      color: #c9d1d9;
+      margin-left: 0.5rem;
+    }
+
+    /* ── Summary bar ──────────────────────────────────────── */
+    #summary {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .badge-pass  { background: #1a3a2a; color: #3fb950; border: 1px solid #238636; }
+    .badge-fail  { background: #3d1a1a; color: #f85149; border: 1px solid #da3633; }
+    .badge-warn  { background: #3d2e1a; color: #d29922; border: 1px solid #9e6a03; }
+    .badge-idle  { background: #1f2937; color: #8b949e; border: 1px solid #30363d; }
+
+    /* ── Log output ───────────────────────────────────────── */
+    #log {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1.2rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      max-height: 70vh;
+      overflow-y: auto;
+      tab-size: 2;
+    }
+    .log-info   { color: #8b949e; }
+    .log-ok     { color: #3fb950; }
+    .log-fail   { color: #f85149; }
+    .log-warn   { color: #d29922; }
+    .log-header { color: #58a6ff; font-weight: 700; }
+    .log-dim    { color: #484f58; }
+
+    /* ── Environment Info ─────────────────────────────────── */
+    #env-info {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      color: #8b949e;
+    }
+    #env-info dt { color: #58a6ff; display: inline; }
+    #env-info dd { display: inline; margin-left: 0.3rem; margin-right: 1.2rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Gem Link - Fetch Spike Test</h1>
+  <p>TASK-004 Track B: Can the Jest webview make external fetch() calls?</p>
+  <span class="tag">SPIKE / NETWORK CAPABILITY PROBE</span>
+</header>
+
+<div class="controls">
+  <button id="btn-run" onclick="runAllTests()">Run Tests</button>
+  <button id="btn-clear" onclick="clearLog()">Clear Log</button>
+</div>
+
+<div id="summary">
+  <span id="sum-get"    class="badge badge-idle">GET  : waiting</span>
+  <span id="sum-post"   class="badge badge-idle">POST : waiting</span>
+  <span id="sum-cors"   class="badge badge-idle">CORS : waiting</span>
+  <span id="sum-worker" class="badge badge-idle">Worker : waiting</span>
+</div>
+
+<pre id="log"></pre>
+
+<dl id="env-info"></dl>
+
+<script>
+/* =================================================================
+   TASK-004 Track B Spike — Fetch Capability Probe
+   Self-contained. No imports. No build step.
+   ================================================================= */
+
+// ── Globals ──────────────────────────────────────────────────────
+var testResults = { get: null, post: null, cors: null, worker: null };
+var isRunning = false;
+
+// ── Utility: timestamp ───────────────────────────────────────────
+function ts() {
+  var d = new Date();
+  return d.toISOString().replace('T', ' ').replace('Z', '');
+}
+
+// ── Utility: log helpers ─────────────────────────────────────────
+function log(msg, cls) {
+  var el = document.getElementById('log');
+  var span = document.createElement('span');
+  span.className = cls || '';
+  span.textContent = '[' + ts() + '] ' + msg + '\n';
+  el.appendChild(span);
+  el.scrollTop = el.scrollHeight;
+}
+
+function logHeader(msg) { log('=== ' + msg + ' ===', 'log-header'); }
+function logOk(msg)     { log('  PASS  ' + msg, 'log-ok'); }
+function logFail(msg)   { log('  FAIL  ' + msg, 'log-fail'); }
+function logWarn(msg)   { log('  WARN  ' + msg, 'log-warn'); }
+function logInfo(msg)   { log('  INFO  ' + msg, 'log-info'); }
+function logDim(msg)    { log('        ' + msg, 'log-dim'); }
+
+// ── Utility: update summary badge ────────────────────────────────
+function setBadge(id, status, label) {
+  var el = document.getElementById(id);
+  el.className = 'badge badge-' + status;
+  el.textContent = label;
+}
+
+// ── Clear log ────────────────────────────────────────────────────
+function clearLog() {
+  document.getElementById('log').innerHTML = '';
+  setBadge('sum-get',    'idle', 'GET  : waiting');
+  setBadge('sum-post',   'idle', 'POST : waiting');
+  setBadge('sum-cors',   'idle', 'CORS : waiting');
+  setBadge('sum-worker', 'idle', 'Worker : waiting');
+  testResults = { get: null, post: null, cors: null, worker: null };
+}
+
+// ── Environment fingerprint ──────────────────────────────────────
+function printEnvironment() {
+  var dl = document.getElementById('env-info');
+  var items = [
+    ['User-Agent', navigator.userAgent],
+    ['Protocol', location.protocol],
+    ['Origin', location.origin || '(none)'],
+    ['Host', location.host || '(none)'],
+    ['In iframe?', (window !== window.top) ? 'YES' : 'NO'],
+    ['Cookies enabled?', navigator.cookieEnabled ? 'YES' : 'NO'],
+    ['Online?', navigator.onLine ? 'YES' : 'NO'],
+    ['Timestamp', new Date().toISOString()]
+  ];
+  dl.innerHTML = '';
+  for (var i = 0; i < items.length; i++) {
+    dl.innerHTML += '<dt>' + items[i][0] + ':</dt><dd>' + items[i][1] + '</dd>';
+  }
+}
+
+// ==================================================================
+//  TEST 1:  Simple GET to httpbin.org
+// ==================================================================
+async function testGet() {
+  logHeader('TEST 1 — fetch() GET to httpbin.org');
+  logInfo('URL: https://httpbin.org/get');
+  logInfo('Purpose: Verify basic external fetch() works');
+
+  var start = performance.now();
+  try {
+    var res = await fetch('https://httpbin.org/get', {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    var elapsed = (performance.now() - start).toFixed(0);
+
+    logInfo('Status: ' + res.status + ' ' + res.statusText);
+    logInfo('Latency: ' + elapsed + 'ms');
+
+    // Log response headers of interest
+    var ct = res.headers.get('content-type');
+    var acao = res.headers.get('access-control-allow-origin');
+    logDim('Content-Type: ' + (ct || '(not exposed)'));
+    logDim('ACAO header: ' + (acao || '(not exposed)'));
+
+    if (res.ok) {
+      var body = await res.json();
+      logDim('Response origin: ' + (body.origin || 'N/A'));
+      logDim('Response URL: ' + (body.url || 'N/A'));
+      logOk('GET request succeeded (' + elapsed + 'ms)');
+      testResults.get = true;
+      setBadge('sum-get', 'pass', 'GET  : PASS');
+    } else {
+      logFail('GET returned non-OK status: ' + res.status);
+      testResults.get = false;
+      setBadge('sum-get', 'fail', 'GET  : FAIL (' + res.status + ')');
+    }
+  } catch (err) {
+    var elapsed = (performance.now() - start).toFixed(0);
+    logFail('GET request threw: ' + err.name + ': ' + err.message);
+    logDim('Elapsed before error: ' + elapsed + 'ms');
+
+    if (err.name === 'TypeError' && err.message.indexOf('Failed to fetch') !== -1) {
+      logWarn('This typically indicates a CSP block, network error, or CORS rejection');
+    }
+    if (err.message.indexOf('Content Security Policy') !== -1) {
+      logWarn('Explicit CSP violation detected');
+    }
+
+    testResults.get = false;
+    setBadge('sum-get', 'fail', 'GET  : FAIL');
+  }
+}
+
+// ==================================================================
+//  TEST 2:  POST with JSON body to httpbin.org
+// ==================================================================
+async function testPost() {
+  logHeader('TEST 2 — fetch() POST to httpbin.org');
+  logInfo('URL: https://httpbin.org/post');
+  logInfo('Purpose: Verify POST with JSON body works');
+
+  var payload = JSON.stringify({
+    game: 'gem-link',
+    test: 'spike-004',
+    timestamp: Date.now()
+  });
+  logDim('Payload: ' + payload);
+
+  var start = performance.now();
+  try {
+    var res = await fetch('https://httpbin.org/post', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: payload
+    });
+    var elapsed = (performance.now() - start).toFixed(0);
+
+    logInfo('Status: ' + res.status + ' ' + res.statusText);
+    logInfo('Latency: ' + elapsed + 'ms');
+
+    if (res.ok) {
+      var body = await res.json();
+      // httpbin echoes back the posted JSON in body.json
+      var echoedData = body.json || body.data;
+      logDim('Echoed data: ' + JSON.stringify(echoedData));
+      logOk('POST request succeeded (' + elapsed + 'ms)');
+      testResults.post = true;
+      setBadge('sum-post', 'pass', 'POST : PASS');
+    } else {
+      logFail('POST returned non-OK status: ' + res.status);
+      testResults.post = false;
+      setBadge('sum-post', 'fail', 'POST : FAIL (' + res.status + ')');
+    }
+  } catch (err) {
+    var elapsed = (performance.now() - start).toFixed(0);
+    logFail('POST request threw: ' + err.name + ': ' + err.message);
+    logDim('Elapsed before error: ' + elapsed + 'ms');
+
+    if (err.name === 'TypeError') {
+      logWarn('POST may be blocked by CSP or the webview may not allow non-GET methods');
+    }
+
+    testResults.post = false;
+    setBadge('sum-post', 'fail', 'POST : FAIL');
+  }
+}
+
+// ==================================================================
+//  TEST 3:  CORS preflight (custom header forces OPTIONS preflight)
+// ==================================================================
+async function testCors() {
+  logHeader('TEST 3 — CORS Preflight (custom header)');
+  logInfo('URL: https://httpbin.org/post');
+  logInfo('Purpose: Force an OPTIONS preflight via custom X-Gem-Link header');
+
+  var start = performance.now();
+  try {
+    var res = await fetch('https://httpbin.org/post', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Gem-Link-Spike': 'task-004',   // non-simple header => preflight
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ preflight: true })
+    });
+    var elapsed = (performance.now() - start).toFixed(0);
+
+    logInfo('Status: ' + res.status + ' ' + res.statusText);
+    logInfo('Latency: ' + elapsed + 'ms');
+
+    // Check CORS headers
+    var acao = res.headers.get('access-control-allow-origin');
+    var acah = res.headers.get('access-control-allow-headers');
+    logDim('ACAO: ' + (acao || '(not exposed)'));
+    logDim('ACAH: ' + (acah || '(not exposed)'));
+
+    if (res.ok) {
+      logOk('CORS preflight + request succeeded (' + elapsed + 'ms)');
+      testResults.cors = true;
+      setBadge('sum-cors', 'pass', 'CORS : PASS');
+    } else {
+      // httpbin might not allow the custom header, which is fine — the point
+      // is whether the browser/webview even lets us attempt it
+      logWarn('Request completed but with status ' + res.status);
+      logInfo('The preflight itself was allowed even if the server rejected the header');
+      testResults.cors = true; // preflight was permitted
+      setBadge('sum-cors', 'warn', 'CORS : PARTIAL (' + res.status + ')');
+    }
+  } catch (err) {
+    var elapsed = (performance.now() - start).toFixed(0);
+    logFail('CORS preflight threw: ' + err.name + ': ' + err.message);
+    logDim('Elapsed before error: ' + elapsed + 'ms');
+
+    // Distinguish "browser blocked preflight" vs "server rejected"
+    if (err.message.indexOf('CORS') !== -1 || err.message.indexOf('cross-origin') !== -1) {
+      logWarn('Browser/webview explicitly blocked the CORS preflight');
+    } else if (err.message.indexOf('Content Security Policy') !== -1) {
+      logWarn('CSP blocked the request before CORS was even attempted');
+    } else {
+      logWarn('Error may indicate CSP or sandbox restriction rather than CORS issue');
+    }
+
+    testResults.cors = false;
+    setBadge('sum-cors', 'fail', 'CORS : FAIL');
+  }
+}
+
+// ==================================================================
+//  TEST 4:  Simulated Cloudflare Worker endpoint
+// ==================================================================
+async function testWorkerEndpoint() {
+  logHeader('TEST 4 — Cloudflare Worker endpoint (simulated)');
+  logInfo('URL: https://gem-link-api.example.workers.dev/verify');
+  logInfo('Purpose: Test reachability of our backend URL pattern');
+  logInfo('NOTE: This domain does not exist yet; we expect a network error.');
+  logInfo('The important thing is whether the browser ATTEMPTS the request');
+  logInfo('vs blocking it at the CSP/sandbox level.');
+
+  var start = performance.now();
+  try {
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
+
+    var res = await fetch('https://gem-link-api.example.workers.dev/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'verify',
+        game: 'gem-link',
+        spike: true
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    var elapsed = (performance.now() - start).toFixed(0);
+    logInfo('Status: ' + res.status + ' ' + res.statusText);
+    logInfo('Latency: ' + elapsed + 'ms');
+
+    // If we somehow get a response, the network path is open
+    logOk('Worker endpoint reachable (unexpected but great!) (' + elapsed + 'ms)');
+    testResults.worker = true;
+    setBadge('sum-worker', 'pass', 'Worker : PASS');
+
+  } catch (err) {
+    clearTimeout(timeoutId);
+    var elapsed = (performance.now() - start).toFixed(0);
+
+    if (err.name === 'AbortError') {
+      logWarn('Request timed out after 5s');
+      logInfo('Timeout suggests the browser DID attempt the request (good sign)');
+      logInfo('The domain simply does not resolve yet');
+      testResults.worker = 'timeout';
+      setBadge('sum-worker', 'warn', 'Worker : TIMEOUT');
+    } else if (err.name === 'TypeError' && err.message.indexOf('Failed to fetch') !== -1) {
+      logInfo('Got "Failed to fetch" — analyzing...');
+      logDim('Elapsed: ' + elapsed + 'ms');
+
+      if (parseInt(elapsed) < 50) {
+        logWarn('Very fast failure (<50ms) — likely CSP/sandbox block');
+        logFail('Browser probably blocked the request at the policy level');
+        testResults.worker = false;
+        setBadge('sum-worker', 'fail', 'Worker : BLOCKED');
+      } else {
+        logInfo('Failure took ' + elapsed + 'ms — likely a DNS/network error');
+        logOk('The browser ATTEMPTED the fetch (network was not blocked by policy)');
+        logInfo('Once the real worker is deployed, this should succeed');
+        testResults.worker = 'dns-fail';
+        setBadge('sum-worker', 'warn', 'Worker : DNS FAIL (expected)');
+      }
+    } else if (err.message.indexOf('Content Security Policy') !== -1) {
+      logFail('Explicit CSP violation — connect-src blocks this domain');
+      testResults.worker = false;
+      setBadge('sum-worker', 'fail', 'Worker : CSP BLOCKED');
+    } else {
+      logFail('Unexpected error: ' + err.name + ': ' + err.message);
+      logDim('Elapsed: ' + elapsed + 'ms');
+      testResults.worker = false;
+      setBadge('sum-worker', 'fail', 'Worker : ERROR');
+    }
+  }
+}
+
+// ==================================================================
+//  CSP meta-check (bonus)
+// ==================================================================
+function checkCSPMeta() {
+  logHeader('BONUS — CSP Meta Tag Check');
+  logInfo('Scanning document for <meta http-equiv="Content-Security-Policy">...');
+
+  var metas = document.querySelectorAll('meta[http-equiv]');
+  var foundCSP = false;
+  for (var i = 0; i < metas.length; i++) {
+    if (metas[i].getAttribute('http-equiv').toLowerCase() === 'content-security-policy') {
+      foundCSP = true;
+      logWarn('Found CSP meta tag: ' + metas[i].getAttribute('content'));
+    }
+  }
+  if (!foundCSP) {
+    logInfo('No CSP meta tags found in the document');
+    logDim('(CSP might still be enforced via HTTP headers — cannot detect from JS)');
+  }
+
+  // Check if SecurityPolicyViolationEvent is fired
+  logInfo('Registering SecurityPolicyViolationEvent listener for future detections...');
+}
+
+// ── SecurityPolicyViolation event listener (global) ──────────────
+document.addEventListener('securitypolicyviolation', function(e) {
+  logFail('CSP VIOLATION EVENT:');
+  logDim('  Blocked URI: ' + e.blockedURI);
+  logDim('  Violated directive: ' + e.violatedDirective);
+  logDim('  Effective directive: ' + e.effectiveDirective);
+  logDim('  Original policy: ' + e.originalPolicy);
+});
+
+// ==================================================================
+//  Summary
+// ==================================================================
+function printSummary() {
+  logHeader('SUMMARY');
+  log('', '');
+
+  var r = testResults;
+  var lines = [
+    ['GET  (httpbin)', r.get],
+    ['POST (httpbin)', r.post],
+    ['CORS preflight', r.cors],
+    ['Worker endpoint', r.worker]
+  ];
+
+  for (var i = 0; i < lines.length; i++) {
+    var label = lines[i][0];
+    var result = lines[i][1];
+    var status;
+    if (result === true) status = 'PASS';
+    else if (result === false) status = 'FAIL';
+    else if (result === null) status = 'SKIPPED';
+    else status = String(result).toUpperCase();
+
+    var pad = '                    '.slice(0, 20 - label.length);
+    if (result === true) logOk(label + pad + status);
+    else if (result === false) logFail(label + pad + status);
+    else logWarn(label + pad + status);
+  }
+
+  log('', '');
+
+  // Determine overall scenario
+  if (r.get === true && r.post === true) {
+    logOk('SCENARIO A: Full fetch() capability detected');
+    logOk('Recommendation: Proceed with backend verification (TASK-010)');
+  } else if (r.get === true && r.post === false) {
+    logWarn('SCENARIO C: Partial fetch() — GET works, POST blocked');
+    logWarn('Recommendation: Limited backend integration, or GET-based verify');
+  } else {
+    logFail('SCENARIO B: fetch() appears blocked');
+    logFail('Recommendation: Client-only validation, no backend server');
+  }
+
+  log('', '');
+  logInfo('NOTE: These results are only reliable when run INSIDE the Jest webview.');
+  logInfo('Local browser results prove the test page works, not the Jest environment.');
+}
+
+// ==================================================================
+//  Main runner
+// ==================================================================
+async function runAllTests() {
+  if (isRunning) return;
+  isRunning = true;
+
+  var btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+
+  clearLog();
+  printEnvironment();
+
+  logHeader('FETCH SPIKE TEST — TASK-004 Track B');
+  logInfo('Starting at ' + new Date().toISOString());
+  logInfo('Running from: ' + location.href);
+  logInfo('Protocol: ' + location.protocol + '  Origin: ' + (location.origin || 'null'));
+  log('', '');
+
+  checkCSPMeta();
+  log('', '');
+
+  await testGet();
+  log('', '');
+  await testPost();
+  log('', '');
+  await testCors();
+  log('', '');
+  await testWorkerEndpoint();
+  log('', '');
+
+  printSummary();
+
+  btn.disabled = false;
+  btn.textContent = 'Run Tests';
+  isRunning = false;
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+printEnvironment();
+</script>
+
+</body>
+</html>

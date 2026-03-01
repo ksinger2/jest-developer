@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gem Clash — Game Design Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0a1a;
+    color: #fff;
+    min-height: 100vh;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #1a0a2e 0%, #16213e 100%);
+    padding: 40px 20px 60px;
+    text-align: center;
+    border-bottom: 3px solid #00ff88;
+  }
+
+  .header h1 {
+    font-size: 48px;
+    background: linear-gradient(135deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #9b59b6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+
+  .header .subtitle {
+    font-size: 18px;
+    color: #aaa;
+    margin-bottom: 20px;
+  }
+
+  .badge-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    background: rgba(0,255,136,0.15);
+    border: 1px solid #00ff88;
+    color: #00ff88;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .badge.orange {
+    background: rgba(255,165,0,0.15);
+    border-color: #ffa500;
+    color: #ffa500;
+  }
+
+  .badge.blue {
+    background: rgba(77,150,255,0.15);
+    border-color: #4d96ff;
+    color: #4d96ff;
+  }
+
+  /* Phone Mockup Container */
+  .mockup-section {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    padding: 60px 20px;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .phone-frame {
+    width: 320px;
+    min-height: 580px;
+    background: #1a1a2e;
+    border-radius: 40px;
+    border: 3px solid #333;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    position: relative;
+  }
+
+  .phone-frame .notch {
+    width: 120px;
+    height: 28px;
+    background: #000;
+    border-radius: 0 0 16px 16px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 5;
+  }
+
+  .phone-frame .screen {
+    padding: 0;
+    position: relative;
+  }
+
+  .screen-label {
+    text-align: center;
+    font-size: 14px;
+    color: #888;
+    margin-top: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  /* Game Board Screen */
+  .game-screen {
+    background: linear-gradient(180deg, #1a0533 0%, #0d1b2a 100%);
+    min-height: 550px;
+  }
+
+  .game-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(0,0,0,0.3);
+  }
+
+  .game-topbar .level { font-size: 16px; font-weight: 700; color: #ffd93d; }
+  .game-topbar .moves { font-size: 14px; color: #ff6b6b; font-weight: 600; }
+  .game-topbar .score { font-size: 14px; color: #6bcb77; font-weight: 600; }
+
+  .game-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 3px;
+    padding: 12px;
+    margin: 8px 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+  }
+
+  .gem {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform 0.15s;
+    position: relative;
+  }
+
+  .gem:hover { transform: scale(1.15); }
+
+  .gem.red { background: linear-gradient(135deg, #ff4757, #ff6b81); box-shadow: 0 2px 8px rgba(255,71,87,0.4); }
+  .gem.blue { background: linear-gradient(135deg, #1e90ff, #54a0ff); box-shadow: 0 2px 8px rgba(30,144,255,0.4); }
+  .gem.green { background: linear-gradient(135deg, #2ed573, #7bed9f); box-shadow: 0 2px 8px rgba(46,213,115,0.4); }
+  .gem.yellow { background: linear-gradient(135deg, #ffa502, #ffd43b); box-shadow: 0 2px 8px rgba(255,165,2,0.4); }
+  .gem.purple { background: linear-gradient(135deg, #9b59b6, #be90d4); box-shadow: 0 2px 8px rgba(155,89,182,0.4); }
+  .gem.white { background: linear-gradient(135deg, #dfe6e9, #ffffff); box-shadow: 0 2px 8px rgba(255,255,255,0.3); }
+  .gem.special {
+    background: linear-gradient(135deg, #ffd93d, #ff6b6b, #9b59b6);
+    box-shadow: 0 2px 12px rgba(255,217,61,0.6);
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 2px 12px rgba(255,217,61,0.6); }
+    50% { box-shadow: 0 2px 20px rgba(255,217,61,0.9); }
+  }
+
+  .game-footer {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .booster-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .booster-btn .price-tag {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    background: #00ff88;
+    color: #000;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 8px;
+  }
+
+  /* Challenge Screen */
+  .challenge-screen {
+    background: linear-gradient(180deg, #0d1b2a 0%, #1a0533 100%);
+    min-height: 550px;
+    padding: 20px 16px;
+  }
+
+  .challenge-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .challenge-header h3 {
+    font-size: 22px;
+    color: #ffd93d;
+    margin-bottom: 4px;
+  }
+
+  .challenge-header p {
+    font-size: 13px;
+    color: #888;
+  }
+
+  .vs-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .vs-players {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .player-info {
+    text-align: center;
+  }
+
+  .player-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+
+  .player-avatar.you { background: linear-gradient(135deg, #4d96ff, #6bcb77); }
+  .player-avatar.opponent { background: linear-gradient(135deg, #ff6b6b, #ffa502); }
+
+  .player-name { font-size: 13px; font-weight: 600; }
+  .player-score-val { font-size: 20px; font-weight: 800; color: #ffd93d; }
+
+  .vs-text {
+    font-size: 24px;
+    font-weight: 900;
+    color: #ff6b6b;
+    text-shadow: 0 0 20px rgba(255,107,107,0.5);
+  }
+
+  .challenge-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .challenge-btn.primary {
+    background: linear-gradient(135deg, #00ff88, #00cc6a);
+    color: #000;
+  }
+
+  .challenge-btn.secondary {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  .pending-list {
+    margin-top: 20px;
+  }
+
+  .pending-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+
+  .pending-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .pending-text { flex: 1; }
+  .pending-text .name { font-size: 14px; font-weight: 600; }
+  .pending-text .detail { font-size: 12px; color: #888; }
+
+  .play-btn-sm {
+    background: #4d96ff;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* Shop Screen */
+  .shop-screen {
+    background: linear-gradient(180deg, #1a0533 0%, #16213e 100%);
+    min-height: 550px;
+    padding: 16px;
+  }
+
+  .shop-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .shop-header h3 { font-size: 22px; color: #ffd93d; }
+  .shop-header p { font-size: 12px; color: #888; margin-top: 4px; }
+
+  .shop-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .shop-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  .shop-icon.moves { background: linear-gradient(135deg, #ff6b6b, #ff4757); }
+  .shop-icon.booster { background: linear-gradient(135deg, #ffd93d, #ffa502); }
+  .shop-icon.lives { background: linear-gradient(135deg, #ff4757, #c0392b); }
+  .shop-icon.pass { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+  .shop-icon.gift { background: linear-gradient(135deg, #6bcb77, #2ed573); }
+  .shop-icon.starter { background: linear-gradient(135deg, #4d96ff, #1e90ff); border: 2px solid #ffd93d; }
+
+  .shop-details { flex: 1; }
+  .shop-name { font-size: 15px; font-weight: 700; }
+  .shop-desc { font-size: 12px; color: #888; margin-top: 2px; }
+
+  .shop-price {
+    background: #00ff88;
+    color: #000;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .shop-price.premium {
+    background: linear-gradient(135deg, #ffd93d, #ffa502);
+  }
+
+  .shop-item.featured {
+    border: 2px solid #ffd93d;
+    background: rgba(255,217,61,0.08);
+  }
+
+  .featured-badge {
+    font-size: 10px;
+    background: #ffd93d;
+    color: #000;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 800;
+    margin-left: 8px;
+  }
+
+  /* SMS Mockup */
+  .sms-section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 60px 20px;
+  }
+
+  .sms-section h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 8px;
+    color: #00ff88;
+  }
+
+  .sms-section .section-sub {
+    text-align: center;
+    color: #888;
+    margin-bottom: 32px;
+    font-size: 15px;
+  }
+
+  .sms-thread {
+    max-width: 380px;
+    margin: 0 auto;
+    background: #f0f0f0;
+    border-radius: 20px;
+    padding: 20px 16px;
+    color: #000;
+  }
+
+  .sms-header-bar {
+    text-align: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 16px;
+  }
+
+  .sms-header-bar .contact { font-weight: 700; font-size: 16px; color: #333; }
+
+  .sms-bubble {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 18px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .sms-bubble.incoming {
+    background: #e5e5ea;
+    color: #000;
+    border-bottom-left-radius: 4px;
+  }
+
+  .sms-bubble.outgoing {
+    background: #007aff;
+    color: #fff;
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+  }
+
+  .sms-bubble.jest {
+    background: #00cc6a;
+    color: #fff;
+    border-bottom-left-radius: 4px;
+  }
+
+  .sms-bubble .link {
+    display: inline-block;
+    margin-top: 6px;
+    color: #4d96ff;
+    text-decoration: underline;
+    font-weight: 600;
+  }
+
+  .sms-bubble.jest .link { color: #fff; text-decoration: underline; }
+
+  .sms-time {
+    text-align: center;
+    font-size: 11px;
+    color: #999;
+    margin: 12px 0;
+  }
+
+  /* Revenue Section */
+  .revenue-section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 20px;
+  }
+
+  .revenue-section h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  .revenue-section .section-sub {
+    text-align: center;
+    color: #888;
+    margin-bottom: 40px;
+    font-size: 15px;
+  }
+
+  .revenue-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .revenue-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .revenue-card .metric-value {
+    font-size: 36px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+
+  .revenue-card .metric-value.green { color: #00ff88; }
+  .revenue-card .metric-value.yellow { color: #ffd93d; }
+  .revenue-card .metric-value.blue { color: #4d96ff; }
+  .revenue-card .metric-value.red { color: #ff6b6b; }
+
+  .revenue-card .metric-label {
+    font-size: 13px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .advantage-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+
+  .advantage-table th {
+    text-align: left;
+    padding: 12px 16px;
+    background: rgba(0,255,136,0.1);
+    color: #00ff88;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .advantage-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 14px;
+    color: #ccc;
+  }
+
+  .advantage-table tr:nth-child(even) td {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .highlight { color: #00ff88; font-weight: 700; }
+  .warn { color: #ff6b6b; font-weight: 700; }
+
+  /* Timeline */
+  .timeline-section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 60px 20px;
+  }
+
+  .timeline-section h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 40px;
+  }
+
+  .timeline {
+    position: relative;
+    padding-left: 40px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, #00ff88, #4d96ff, #9b59b6);
+    border-radius: 3px;
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 32px;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -31px;
+    top: 6px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 3px solid #00ff88;
+    background: #0a0a1a;
+  }
+
+  .timeline-item.phase2::before { border-color: #4d96ff; }
+  .timeline-item.phase3::before { border-color: #9b59b6; }
+
+  .timeline-item h4 {
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+
+  .timeline-item .weeks {
+    font-size: 12px;
+    color: #00ff88;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .timeline-item.phase2 .weeks { color: #4d96ff; }
+  .timeline-item.phase3 .weeks { color: #9b59b6; }
+
+  .timeline-item ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .timeline-item ul li {
+    font-size: 13px;
+    color: #aaa;
+    padding: 3px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+
+  .timeline-item ul li::before {
+    content: '>';
+    position: absolute;
+    left: 0;
+    color: #555;
+  }
+
+  /* Jest Footer */
+  .jest-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(0,0,0,0.6);
+    border-top: 1px solid rgba(0,255,136,0.3);
+  }
+
+  .jest-logo { font-weight: 800; font-size: 14px; color: #00ff88; }
+  .jest-join {
+    background: #00ff88;
+    color: #000;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  /* Footer */
+  .page-footer {
+    text-align: center;
+    padding: 40px 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    color: #555;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>GEM CLASH</h1>
+  <p class="subtitle">Social Match-3 for the Jest Platform</p>
+  <div class="badge-row">
+    <span class="badge">Match-3 Puzzle</span>
+    <span class="badge orange">PvP Challenges</span>
+    <span class="badge blue">Jest Native</span>
+  </div>
+</div>
+
+<!-- Phone Mockups -->
+<div class="mockup-section">
+
+  <!-- Screen 1: Game Board -->
+  <div>
+    <div class="phone-frame">
+      <div class="notch"></div>
+      <div class="screen game-screen">
+        <div class="game-topbar">
+          <span class="level">Level 12</span>
+          <span class="moves">18 Moves</span>
+          <span class="score">Score: 4,230</span>
+        </div>
+
+        <div class="game-board" id="gameBoard"></div>
+
+        <div class="game-footer">
+          <div class="booster-btn">
+            <span>💣</span>
+            <span class="price-tag">$1</span>
+          </div>
+          <div class="booster-btn">
+            <span>🔀</span>
+            <span class="price-tag">$1</span>
+          </div>
+          <div class="booster-btn">
+            <span>🌈</span>
+            <span class="price-tag">$2</span>
+          </div>
+          <div class="booster-btn">
+            <span>➕</span>
+            <span class="price-tag">$1</span>
+          </div>
+        </div>
+
+        <div class="jest-bar">
+          <span class="jest-logo">Jest.com</span>
+          <button class="jest-join">Join</button>
+        </div>
+      </div>
+    </div>
+    <p class="screen-label">Gameplay</p>
+  </div>
+
+  <!-- Screen 2: Challenge -->
+  <div>
+    <div class="phone-frame">
+      <div class="notch"></div>
+      <div class="screen challenge-screen">
+        <div class="challenge-header">
+          <h3>Challenges</h3>
+          <p>Beat your friends' scores to win!</p>
+        </div>
+
+        <div class="vs-card">
+          <div class="vs-players">
+            <div class="player-info">
+              <div class="player-avatar you">😎</div>
+              <div class="player-name">You</div>
+              <div class="player-score-val">12,450</div>
+            </div>
+            <div class="vs-text">VS</div>
+            <div class="player-info">
+              <div class="player-avatar opponent">🔥</div>
+              <div class="player-name">Sarah</div>
+              <div class="player-score-val">11,890</div>
+            </div>
+          </div>
+          <button class="challenge-btn primary">Challenge Back on Level 13</button>
+        </div>
+
+        <button class="challenge-btn secondary">Challenge a New Friend via Text</button>
+
+        <div class="pending-list">
+          <div class="pending-item">
+            <div class="pending-avatar" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">🎯</div>
+            <div class="pending-text">
+              <div class="name">Mike challenged you!</div>
+              <div class="detail">Level 8 &bull; Score to beat: 9,200</div>
+            </div>
+            <button class="play-btn-sm">Play</button>
+          </div>
+          <div class="pending-item">
+            <div class="pending-avatar" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">🏆</div>
+            <div class="pending-text">
+              <div class="name">You beat Alex!</div>
+              <div class="detail">Level 6 &bull; 8,340 vs 7,120</div>
+            </div>
+            <button class="play-btn-sm" style="background: #00ff88; color: #000;">Won!</button>
+          </div>
+        </div>
+
+        <div class="jest-bar" style="margin-top: auto;">
+          <span class="jest-logo">Jest.com</span>
+          <button class="jest-join">Join</button>
+        </div>
+      </div>
+    </div>
+    <p class="screen-label">Social Challenges</p>
+  </div>
+
+  <!-- Screen 3: Shop -->
+  <div>
+    <div class="phone-frame">
+      <div class="notch"></div>
+      <div class="screen shop-screen">
+        <div class="shop-header">
+          <h3>Shop</h3>
+          <p>Transparent pricing &mdash; $1 = 1 Jest Token</p>
+        </div>
+
+        <div class="shop-item featured">
+          <div class="shop-icon starter">🎁</div>
+          <div class="shop-details">
+            <div class="shop-name">Starter Pack <span class="featured-badge">BEST VALUE</span></div>
+            <div class="shop-desc">5 boosters + 50 coins + 3 extra lives</div>
+          </div>
+          <div class="shop-price premium">$2</div>
+        </div>
+
+        <div class="shop-item">
+          <div class="shop-icon moves">➕</div>
+          <div class="shop-details">
+            <div class="shop-name">3 Extra Moves</div>
+            <div class="shop-desc">Keep playing when you're so close!</div>
+          </div>
+          <div class="shop-price">$1</div>
+        </div>
+
+        <div class="shop-item">
+          <div class="shop-icon booster">💣</div>
+          <div class="shop-details">
+            <div class="shop-name">Bomb Booster</div>
+            <div class="shop-desc">Clear a 3x3 area instantly</div>
+          </div>
+          <div class="shop-price">$1</div>
+        </div>
+
+        <div class="shop-item">
+          <div class="shop-icon lives">❤️</div>
+          <div class="shop-details">
+            <div class="shop-name">Refill Lives</div>
+            <div class="shop-desc">Get 5 lives instantly</div>
+          </div>
+          <div class="shop-price">$1</div>
+        </div>
+
+        <div class="shop-item">
+          <div class="shop-icon pass">👑</div>
+          <div class="shop-details">
+            <div class="shop-name">Season Pass</div>
+            <div class="shop-desc">4 weeks of premium rewards + exclusive gems</div>
+          </div>
+          <div class="shop-price premium">$5</div>
+        </div>
+
+        <div class="shop-item">
+          <div class="shop-icon gift">🎁</div>
+          <div class="shop-details">
+            <div class="shop-name">Gift a Friend</div>
+            <div class="shop-desc">Send a booster to someone via text</div>
+          </div>
+          <div class="shop-price">$1</div>
+        </div>
+
+        <div class="jest-bar">
+          <span class="jest-logo">Jest.com</span>
+          <button class="jest-join">Join</button>
+        </div>
+      </div>
+    </div>
+    <p class="screen-label">Shop &amp; Monetization</p>
+  </div>
+</div>
+
+<!-- SMS Re-engagement Section -->
+<div class="sms-section">
+  <h2>Messaging-Native Re-engagement</h2>
+  <p class="section-sub">Jest's SMS/RCS notifications drive 3-4x retention vs traditional push</p>
+
+  <div class="sms-thread">
+    <div class="sms-header-bar">
+      <div class="contact">Jest.com</div>
+    </div>
+
+    <div class="sms-time">Today 2:34 PM</div>
+
+    <div class="sms-bubble jest">
+      Sarah just beat your score on Level 12! Can you take the lead back?
+      <span class="link">Play now on jest.com</span>
+    </div>
+
+    <div class="sms-time">Yesterday 6:15 PM</div>
+
+    <div class="sms-bubble jest">
+      Your 5-day streak is on fire! Log in to keep it going and earn bonus coins.
+      <span class="link">Play now</span>
+    </div>
+
+    <div class="sms-time">2 days ago</div>
+
+    <div class="sms-bubble jest">
+      Mike sent you a gift! Open Gem Clash to claim your free Bomb Booster.
+      <span class="link">Claim gift</span>
+    </div>
+  </div>
+</div>
+
+<!-- Revenue Comparison -->
+<div class="revenue-section">
+  <h2>Why Jest Changes the Math</h2>
+  <p class="section-sub">90/10 revenue split means we earn more per dollar than any app store game</p>
+
+  <div class="revenue-grid">
+    <div class="revenue-card">
+      <div class="metric-value green">90%</div>
+      <div class="metric-label">Developer Revenue Share</div>
+    </div>
+    <div class="revenue-card">
+      <div class="metric-value yellow">$1 = $1</div>
+      <div class="metric-label">Transparent Pricing</div>
+    </div>
+    <div class="revenue-card">
+      <div class="metric-value blue">3-4x</div>
+      <div class="metric-label">Retention vs Mobile</div>
+    </div>
+    <div class="revenue-card">
+      <div class="metric-value red">0 sec</div>
+      <div class="metric-label">Install Time</div>
+    </div>
+  </div>
+
+  <table class="advantage-table">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th>App Store Game</th>
+        <th>Gem Clash on Jest</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>$1 purchase</td>
+        <td>Developer keeps <span class="warn">$0.70</span></td>
+        <td>Developer keeps <span class="highlight">$0.90</span></td>
+      </tr>
+      <tr>
+        <td>$5 Season Pass</td>
+        <td>Developer keeps <span class="warn">$3.50</span></td>
+        <td>Developer keeps <span class="highlight">$4.50</span></td>
+      </tr>
+      <tr>
+        <td>User Acquisition</td>
+        <td>$2-5 CPI (cost per install)</td>
+        <td><span class="highlight">30-60% lower</span> via SMS</td>
+      </tr>
+      <tr>
+        <td>D7 Retention</td>
+        <td>10-15% (push notifications)</td>
+        <td><span class="highlight">15-20%</span> (SMS re-engagement)</td>
+      </tr>
+      <tr>
+        <td>First Session</td>
+        <td>Download → Install → Open (60-120s)</td>
+        <td><span class="highlight">Tap link → Playing (0s)</span></td>
+      </tr>
+      <tr>
+        <td>Pricing Transparency</td>
+        <td>Gems obfuscate real cost</td>
+        <td><span class="highlight">$1 means $1</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Development Timeline -->
+<div class="timeline-section">
+  <h2>Development Roadmap</h2>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <h4>Phase 1: MVP</h4>
+      <div class="weeks">Weeks 1-4</div>
+      <ul>
+        <li>Match-3 engine (Phaser 3 + TypeScript)</li>
+        <li>30 hand-crafted levels with difficulty curve</li>
+        <li>Jest SDK integration (player, data, payments)</li>
+        <li>3 IAP products (moves, booster, lives)</li>
+        <li>Guest mode support for first 10 levels</li>
+        <li>Submit for Jest review</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item phase2">
+      <h4>Phase 2: Social & Retention</h4>
+      <div class="weeks">Weeks 5-8</div>
+      <ul>
+        <li>PvP challenge system via referral links</li>
+        <li>SMS notification scheduling (D0-D7)</li>
+        <li>Daily challenge mode</li>
+        <li>7-day login streak rewards</li>
+        <li>Leaderboards (weekly/all-time)</li>
+        <li>Gift a friend feature</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item phase3">
+      <h4>Phase 3: Scale & Monetize</h4>
+      <div class="weeks">Weeks 9-12</div>
+      <ul>
+        <li>Season Pass (4-week premium track, $5)</li>
+        <li>Level editor for rapid content creation</li>
+        <li>10+ new levels per week pipeline</li>
+        <li>Seasonal themes and cosmetics</li>
+        <li>Apply for Jest Games Fund ($200K)</li>
+        <li>Analytics-driven difficulty tuning</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="page-footer">
+  Senior Game Strategist Assessment &mdash; February 2026<br>
+  Gem Clash: Social Match-3 for Jest Platform
+</div>
+
+<script>
+  // Generate random game board
+  const board = document.getElementById('gameBoard');
+  const gemTypes = ['red', 'blue', 'green', 'yellow', 'purple', 'white'];
+  const gemEmojis = { red: '🔴', blue: '🔵', green: '🟢', yellow: '🟡', purple: '🟣', white: '⚪' };
+
+  for (let i = 0; i < 64; i++) {
+    const gem = document.createElement('div');
+    // Add one special gem
+    if (i === 27) {
+      gem.className = 'gem special';
+      gem.textContent = '⭐';
+    } else {
+      const type = gemTypes[Math.floor(Math.random() * gemTypes.length)];
+      gem.className = `gem ${type}`;
+    }
+    board.appendChild(gem);
+  }
+</script>
+
+</body>
+</html>
