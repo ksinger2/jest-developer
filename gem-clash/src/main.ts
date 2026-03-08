@@ -44,16 +44,19 @@ logger.info('boot', `Initial scene: ${SCENE_BOOT}`);
 // PHASER GAME CONFIGURATION
 // ============================================================
 
+/** Render at native DPI so the canvas isn't blurry when CSS-scaled */
+const canvasZoom = Math.min(Math.ceil(window.devicePixelRatio || 1), 3);
+
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
+  zoom: canvasZoom,
   parent: 'game-container',
   backgroundColor: BACKGROUND_COLOR,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    // Removed MAX_ZOOM to prevent blurry scaling on non-retina displays
   },
   scene: [BootScene, PreloadScene, MainMenuScene, GameplayScene, LevelCompleteScene, LevelSelectScene, ShopScene],
   render: {
@@ -83,6 +86,9 @@ logger.info('boot', 'Phaser config assembled', {
 logger.info('boot', 'Creating Phaser.Game instance...');
 
 const game = new Phaser.Game(config);
+
+// Expose game instance for testing (Playwright QA)
+(window as any).__GAME__ = game;
 
 logger.info('boot', 'Phaser.Game instance created successfully');
 logger.info('boot', '========================================');

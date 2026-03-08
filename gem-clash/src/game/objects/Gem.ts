@@ -23,7 +23,7 @@ const log = new Logger('Gem');
 const SELECTED_SCALE = 1.1;
 
 /** Target display size for the gem sprite within the cell */
-const SPRITE_DISPLAY_SIZE = GEM_SIZE * 0.8;
+const SPRITE_DISPLAY_SIZE = GEM_SIZE * 0.92;
 
 export class Gem extends Phaser.GameObjects.Container {
   public readonly gemId: string;

@@ -252,6 +252,9 @@
       cursor: move;
       border: 2px solid transparent;
     }
+    .editable > img {
+      pointer-events: none;
+    }
 
     .editable:hover {
       border-color: rgba(255, 215, 0, 0.5);
@@ -369,6 +372,7 @@
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
+      pointer-events: none;
     }
 
     .el-button {
@@ -436,8 +440,9 @@
     }
 
     .board-gem {
-      border-radius: 6px;
+      border-radius: 4px;
       aspect-ratio: 1;
+      object-fit: contain;
     }
 
     .el-hud {
@@ -457,7 +462,8 @@
     .hud-icon {
       width: 20px;
       height: 20px;
-      border-radius: 50%;
+      border-radius: 4px;
+      object-fit: contain;
     }
 
     .hud-value {
@@ -483,6 +489,11 @@
       font-size: 24px;
       position: relative;
     }
+    .booster-btn img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+    }
 
     .booster-btn::after {
       content: '3';
@@ -507,8 +518,9 @@
     }
 
     .preview-gem {
-      border-radius: 6px;
+      border-radius: 4px;
       aspect-ratio: 1;
+      object-fit: contain;
     }
 
     .el-shop-header {
@@ -532,12 +544,16 @@
     .shop-card-icon {
       width: 48px;
       height: 48px;
-      background: linear-gradient(135deg, #FFD700, #FFA500);
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 24px;
+    }
+    .shop-card-icon img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
     }
 
     .shop-card-info { flex: 1; }
@@ -771,9 +787,9 @@
       <div class="section-content">
         <p style="font-size: 10px; color: #666; margin-bottom: 10px;">Drag assets to booster slots</p>
         <div id="booster-asset-map" style="display: flex; gap: 8px;">
-          <div class="booster-map-slot" data-booster="hammer" style="width: 50px; height: 50px; background: linear-gradient(180deg, #444, #333); border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px;">🔨</div>
-          <div class="booster-map-slot" data-booster="bomb" style="width: 50px; height: 50px; background: linear-gradient(180deg, #444, #333); border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px;">💣</div>
-          <div class="booster-map-slot" data-booster="rainbow" style="width: 50px; height: 50px; background: linear-gradient(180deg, #444, #333); border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px;">🌈</div>
+          <div class="booster-map-slot" data-booster="hammer" style="width: 50px; height: 50px; background: linear-gradient(180deg, #444, #333); border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;"><img src="assets/ui/ui_hammer.png" style="width:36px;height:36px;object-fit:contain;"></div>
+          <div class="booster-map-slot" data-booster="bomb" style="width: 50px; height: 50px; background: linear-gradient(180deg, #444, #333); border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;"><img src="assets/ui/ui_bomb.png" style="width:36px;height:36px;object-fit:contain;"></div>
+          <div class="booster-map-slot" data-booster="rainbow" style="width: 50px; height: 50px; background: linear-gradient(180deg, #444, #333); border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;"><img src="assets/ui/ui_rainbow.png" style="width:36px;height:36px;object-fit:contain;"></div>
         </div>
         <button class="btn-secondary" onclick="applyBoosterAssets()" style="margin-top: 8px;">Apply to Boosters</button>
       </div>
@@ -806,6 +822,13 @@
           <label>Height</label>
           <input type="range" id="gift-height" min="40" max="120" value="72">
           <span class="val" id="gift-height-val">72</span>
+        </div>
+
+        <div style="font-size: 11px; color: #FFD700; margin: 12px 0 4px;">GEM PREVIEW (Menu)</div>
+        <div class="row">
+          <label>Gem Gap</label>
+          <input type="range" id="gem-preview-gap" min="0" max="12" value="4">
+          <span class="val" id="gem-preview-gap-val">4</span>
         </div>
 
         <div style="font-size: 11px; color: #FFD700; margin: 12px 0 4px;">GAME BOARD</div>
@@ -889,7 +912,7 @@
         <div class="game-screen active" id="screen-menu">
           <div class="editable el-logo" data-name="Logo" data-type="logo"
                style="left: 50px; top: 60px; width: 278px; height: 80px;">
-            Gem Link
+            <img src="assets/ui/ui_logo.png" style="width:100%;height:100%;object-fit:contain;" alt="Gem Link">
           </div>
 
           <div class="editable el-gem-preview" data-name="Gem Preview" data-type="gem-preview"
@@ -921,15 +944,15 @@
           <div class="editable el-hud" data-name="HUD Bar" data-type="hud"
                style="left: 20px; top: 50px; width: 338px; height: 36px;">
             <div class="hud-item">
-              <div class="hud-icon" style="background: #FFD700;"></div>
+              <img class="hud-icon" src="assets/ui/ui_coin.png" alt="coins">
               <span class="hud-value">1,250</span>
             </div>
             <div class="hud-item">
-              <div class="hud-icon" style="background: #3498DB;"></div>
+              <img class="hud-icon" src="assets/ui/ui_gem.png" alt="gems">
               <span class="hud-value">15</span>
             </div>
             <div class="hud-item">
-              <div class="hud-icon" style="background: #E74C3C;"></div>
+              <img class="hud-icon" src="assets/ui/ui_heart.png" alt="lives">
               <span class="hud-value">4,800</span>
             </div>
           </div>
@@ -942,9 +965,9 @@
 
           <div class="editable el-booster-tray" data-name="Boosters" data-type="booster-tray"
                style="left: 95px; top: 520px; width: 188px; height: 56px;">
-            <div class="booster-btn">🔨</div>
-            <div class="booster-btn">💣</div>
-            <div class="booster-btn">🌈</div>
+            <div class="booster-btn"><img src="assets/ui/ui_hammer.png" alt="hammer"></div>
+            <div class="booster-btn"><img src="assets/ui/ui_bomb.png" alt="bomb"></div>
+            <div class="booster-btn"><img src="assets/ui/ui_rainbow.png" alt="rainbow"></div>
           </div>
         </div>
 
@@ -957,7 +980,7 @@
 
           <div class="editable el-shop-card" data-name="Shop Card 1" data-type="shop-card"
                style="left: 24px; top: 120px; width: 330px; height: 80px;">
-            <div class="shop-card-icon">💰</div>
+            <div class="shop-card-icon"><img src="assets/ui/ui_coin.png" alt="coins"></div>
             <div class="shop-card-info">
               <div class="shop-card-title">500 Coins</div>
               <div class="shop-card-desc">A small pile of coins</div>
@@ -967,7 +990,7 @@
 
           <div class="editable el-shop-card" data-name="Shop Card 2" data-type="shop-card"
                style="left: 24px; top: 212px; width: 330px; height: 80px;">
-            <div class="shop-card-icon">💰</div>
+            <div class="shop-card-icon"><img src="assets/ui/ui_coin.png" alt="coins"></div>
             <div class="shop-card-info">
               <div class="shop-card-title">2,500 Coins</div>
               <div class="shop-card-desc">A bag of coins</div>
@@ -977,7 +1000,7 @@
 
           <div class="editable el-shop-card" data-name="Shop Card 3" data-type="shop-card"
                style="left: 24px; top: 304px; width: 330px; height: 80px;">
-            <div class="shop-card-icon">🏆</div>
+            <div class="shop-card-icon"><img src="assets/ui/ui_star.png" alt="premium"></div>
             <div class="shop-card-info">
               <div class="shop-card-title">10,000 Coins</div>
               <div class="shop-card-desc">A chest of coins!</div>
@@ -1082,6 +1105,15 @@
   </div>
 
   <script>
+    const gemImages = [
+      'assets/gems/gem_heart.png',     // red
+      'assets/gems/gem_diamond.png',   // blue
+      'assets/gems/gem_square.png',    // green
+      'assets/gems/gem_circle.png',    // purple
+      'assets/gems/gem_triangle.png',  // yellow
+      'assets/gems/gem_star.png',      // white
+    ];
+    // Keep gradient fallbacks for gem color mapping system
     const gemColors = [
       'linear-gradient(135deg, #E74C3C, #C0392B)',
       'linear-gradient(135deg, #3498DB, #2980B9)',
@@ -1106,14 +1138,19 @@
 
     // Initialize gem grids
     function initGems() {
+      const gemColorNames = ['red', 'blue', 'green', 'purple', 'yellow', 'white'];
+
       // Menu gem preview
       const preview = document.querySelector('.el-gem-preview');
       if (preview) {
         preview.innerHTML = '';
         for (let i = 0; i < 15; i++) {
-          const gem = document.createElement('div');
+          const idx = i % gemImages.length;
+          const gem = document.createElement('img');
           gem.className = 'preview-gem';
-          gem.style.background = gemColors[i % gemColors.length];
+          gem.src = gemImages[idx];
+          gem.dataset.gemColor = gemColorNames[idx];
+          gem.draggable = false;
           preview.appendChild(gem);
         }
       }
@@ -1123,9 +1160,12 @@
       if (board) {
         board.innerHTML = '';
         for (let i = 0; i < 64; i++) {
-          const gem = document.createElement('div');
+          const idx = Math.floor(Math.random() * gemImages.length);
+          const gem = document.createElement('img');
           gem.className = 'board-gem';
-          gem.style.background = gemColors[Math.floor(Math.random() * gemColors.length)];
+          gem.src = gemImages[idx];
+          gem.dataset.gemColor = gemColorNames[idx];
+          gem.draggable = false;
           board.appendChild(gem);
         }
       }
@@ -1155,7 +1195,8 @@
     const screenState = {
       menu: {
         'gift-width': 330, 'gift-height': 72,
-        'btn-width': 200, 'btn-height': 50
+        'btn-width': 200, 'btn-height': 50,
+        'gem-preview-gap': 4
       },
       gameplay: {
         'board-width': 338, 'board-height': 380, 'board-padding': 8,
@@ -1170,7 +1211,7 @@
 
     function saveCurrentScreenState() {
       const sliders = [
-        'gift-width', 'gift-height', 'board-width', 'board-height',
+        'gift-width', 'gift-height', 'gem-preview-gap', 'board-width', 'board-height',
         'board-padding', 'board-cols', 'board-rows', 'hud-height',
         'booster-size', 'shop-card-height', 'btn-width', 'btn-height'
       ];
@@ -2060,6 +2101,12 @@
       if (el) el.style.height = val + 'px';
     });
 
+    // Gem Preview Gap
+    setupSlider('gem-preview-gap', 'gem-preview-gap-val', val => {
+      const el = document.querySelector('.el-gem-preview');
+      if (el) el.style.gap = val + 'px';
+    });
+
     // Game Board
     setupSlider('board-width', 'board-width-val', val => {
       const el = document.querySelector('.el-board');
@@ -2276,39 +2323,32 @@
       });
     });
 
-    // Apply gem assets to all board gems
+    // Apply custom gem assets to all board gems (overrides default sprites when user uploads)
     function applyGemAssetsToBoard() {
       const board = document.getElementById('board-grid');
       if (!board) return;
 
       const gems = board.querySelectorAll('.board-gem');
       gems.forEach(gem => {
-        const bgStyle = gem.style.background;
-        const colorKey = gemColorToKey[bgStyle];
+        const colorKey = gem.dataset.gemColor;
         if (colorKey && gemAssetMap[colorKey]) {
-          gem.style.backgroundImage = `url(${gemAssetMap[colorKey]})`;
-          gem.style.backgroundSize = 'contain';
-          gem.style.backgroundRepeat = 'no-repeat';
-          gem.style.backgroundPosition = 'center';
-          gem.style.background = `url(${gemAssetMap[colorKey]}) center/contain no-repeat`;
-          gem.dataset.gemColor = colorKey;
+          gem.src = gemAssetMap[colorKey];
         }
       });
 
       // Also apply to menu preview gems
       const previewGems = document.querySelectorAll('.preview-gem');
       previewGems.forEach(gem => {
-        const bgStyle = gem.style.background;
-        const colorKey = gemColorToKey[bgStyle];
+        const colorKey = gem.dataset.gemColor;
         if (colorKey && gemAssetMap[colorKey]) {
-          gem.style.background = `url(${gemAssetMap[colorKey]}) center/contain no-repeat`;
+          gem.src = gemAssetMap[colorKey];
         }
       });
 
       console.log('Applied gem assets to board');
     }
 
-    // Apply booster assets
+    // Apply booster assets (overrides default sprites when user uploads)
     function applyBoosterAssets() {
       const boosters = document.querySelectorAll('.booster-btn');
       const boosterTypes = ['hammer', 'bomb', 'rainbow'];
@@ -2316,11 +2356,12 @@
       boosters.forEach((btn, i) => {
         const type = boosterTypes[i];
         if (boosterAssetMap[type]) {
-          btn.innerHTML = '';
-          btn.style.backgroundImage = `url(${boosterAssetMap[type]})`;
-          btn.style.backgroundSize = 'contain';
-          btn.style.backgroundRepeat = 'no-repeat';
-          btn.style.backgroundPosition = 'center';
+          const img = btn.querySelector('img');
+          if (img) {
+            img.src = boosterAssetMap[type];
+          } else {
+            btn.innerHTML = `<img src="${boosterAssetMap[type]}" alt="${type}">`;
+          }
           btn.dataset.boosterType = type;
         }
       });

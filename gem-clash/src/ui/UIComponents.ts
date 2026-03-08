@@ -58,6 +58,7 @@ import {
   ASSET_KEY_HEART,
   ASSET_KEY_COIN,
   ASSET_KEY_GEM,
+  ASSET_KEY_STAR,
   TEXT_SHADOW_OFFSET_X,
   TEXT_SHADOW_OFFSET_Y,
   TEXT_SHADOW_BLUR,
@@ -359,43 +360,29 @@ export class GlHUD extends Phaser.GameObjects.Container {
     super(scene, Math.round(GAME_WIDTH / 2), hudY);
     log.debug('constructor', 'Creating GlHUD');
 
+    // Dark backdrop strip for contrast over vivid backgrounds
+    const backdrop = scene.add.graphics();
+    backdrop.fillStyle(0x000000, 0.55);
+    backdrop.fillRect(0, 0, GAME_WIDTH, HUD_TOP_MARGIN + HUD_PILL_HEIGHT + 8);
+    backdrop.setDepth(Z_HUD - 1);
+    backdrop.setScrollFactor(0);
+
     // Pill X positions: spacing = HUD_PILL_WIDTH + HUD_PILL_GAP = 102
     const pillSpacing = HUD_PILL_WIDTH + HUD_PILL_GAP;
 
     this.heartsBadge = new GlBadge(scene, -pillSpacing, 0, ASSET_KEY_HEART, 5, BADGE_COLOR_HEART, {
       showPlus: true,
-      iconDraw: (g) => {
-        g.fillStyle(0xFFFFFF, 1);
-        g.fillCircle(-3, -2, 4);
-        g.fillCircle(3, -2, 4);
-        g.fillTriangle(-7, 0, 7, 0, 0, 7);
-      },
     });
     this.coinsBadge = new GlBadge(scene, 0, 0, ASSET_KEY_COIN, 0, BADGE_COLOR_COIN, {
       showPlus: true,
-      iconDraw: (g) => {
-        g.fillStyle(0xFFFFFF, 1);
-        g.fillCircle(0, 0, 6);
-        g.fillStyle(BADGE_COLOR_COIN, 1);
-        g.fillCircle(0, 0, 3);
-      },
     });
     this.gemsBadge = new GlBadge(scene, pillSpacing, 0, ASSET_KEY_GEM, 0, BADGE_COLOR_GEM, {
       showPlus: true,
-      iconDraw: (g) => {
-        g.fillStyle(0xFFFFFF, 1);
-        g.beginPath();
-        g.moveTo(0, -7);
-        g.lineTo(6, 0);
-        g.lineTo(0, 7);
-        g.lineTo(-6, 0);
-        g.closePath();
-        g.fillPath();
-      },
     });
 
     this.add([this.heartsBadge, this.coinsBadge, this.gemsBadge]);
     this.setDepth(Z_HUD);
+    this.setScrollFactor(0);
 
     scene.add.existing(this);
     log.info('constructor', 'GlHUD created');
@@ -406,6 +393,14 @@ export class GlHUD extends Phaser.GameObjects.Container {
     this.coinsBadge.setValue(coins);
     this.gemsBadge.setValue(gems);
     log.debug('updateValues', 'HUD updated', { lives, coins, gems });
+    return this;
+  }
+
+  /** Wire all badge + buttons to the same callback (typically navigate to shop) */
+  onAllPlusClick(callback: () => void): this {
+    this.heartsBadge.onPlusClick(callback);
+    this.coinsBadge.onPlusClick(callback);
+    this.gemsBadge.onPlusClick(callback);
     return this;
   }
 
@@ -717,9 +712,10 @@ export interface GlStarDisplayConfig {
 }
 
 export class GlStarDisplay extends Phaser.GameObjects.Container {
-  private starGraphics: Phaser.GameObjects.Graphics[] = [];
+  private starObjects: (Phaser.GameObjects.Graphics | Phaser.GameObjects.Image)[] = [];
   private starSize: number;
   private isAnimated: boolean;
+  private useSprite: boolean;
 
   constructor(
     scene: Phaser.Scene,
@@ -731,17 +727,32 @@ export class GlStarDisplay extends Phaser.GameObjects.Container {
     super(scene, x, y);
     log.debug('constructor', 'Creating GlStarDisplay', { stars });
 
-    // starCount =stars;
     this.starSize = config.size ?? 24;
     this.isAnimated = config.animated ?? false;
+    this.useSprite = scene.textures.exists(ASSET_KEY_STAR);
 
     const spacing = this.starSize * 2.2;
     for (let i = 0; i < 3; i++) {
-      const g = scene.add.graphics();
-      g.x = (i - 1) * spacing;
-      this.drawStar(g, i < stars);
-      this.starGraphics.push(g);
-      this.add(g);
+      const filled = i < stars;
+      const posX = (i - 1) * spacing;
+
+      if (this.useSprite) {
+        const img = scene.add.image(posX, 0, ASSET_KEY_STAR);
+        const displaySize = this.starSize * 2;
+        img.setDisplaySize(displaySize, displaySize);
+        if (!filled) {
+          img.setTint(0x555555);
+          img.setAlpha(0.5);
+        }
+        this.starObjects.push(img);
+        this.add(img);
+      } else {
+        const g = scene.add.graphics();
+        g.x = posX;
+        this.drawStarGraphics(g, filled);
+        this.starObjects.push(g);
+        this.add(g);
+      }
     }
 
     if (this.isAnimated && stars > 0) {
@@ -752,7 +763,7 @@ export class GlStarDisplay extends Phaser.GameObjects.Container {
     log.info('constructor', 'GlStarDisplay created');
   }
 
-  private drawStar(g: Phaser.GameObjects.Graphics, filled: boolean): void {
+  private drawStarGraphics(g: Phaser.GameObjects.Graphics, filled: boolean): void {
     g.clear();
     const s = this.starSize;
 
@@ -790,9 +801,21 @@ export class GlStarDisplay extends Phaser.GameObjects.Container {
 
   setStars(count: 0 | 1 | 2 | 3): this {
     log.debug('setStars', `Setting stars to ${count}`);
-    // starCount =count;
     for (let i = 0; i < 3; i++) {
-      this.drawStar(this.starGraphics[i], i < count);
+      const filled = i < count;
+      const obj = this.starObjects[i];
+
+      if (this.useSprite && obj instanceof Phaser.GameObjects.Image) {
+        if (filled) {
+          obj.clearTint();
+          obj.setAlpha(1);
+        } else {
+          obj.setTint(0x555555);
+          obj.setAlpha(0.5);
+        }
+      } else if (obj instanceof Phaser.GameObjects.Graphics) {
+        this.drawStarGraphics(obj, filled);
+      }
     }
     if (this.isAnimated && count > 0) {
       this.animateStars(count);
@@ -802,7 +825,7 @@ export class GlStarDisplay extends Phaser.GameObjects.Container {
 
   private animateStars(count: number): void {
     for (let i = 0; i < count; i++) {
-      const star = this.starGraphics[i];
+      const star = this.starObjects[i];
       star.setScale(0);
       this.scene.tweens.add({
         targets: star,

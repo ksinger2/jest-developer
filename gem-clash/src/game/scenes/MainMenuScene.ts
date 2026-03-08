@@ -14,7 +14,7 @@ import { OfferManager } from '../systems/OfferManager';
 import { fadeIn, fadeTransition } from '../../ui/Transitions';
 import {
   SCENE_MAIN_MENU,
-  SCENE_GAMEPLAY,
+  SCENE_LEVEL_SELECT,
   SCENE_SHOP,
   FONT_FAMILY,
   FONT_SIZE_XS,
@@ -34,6 +34,8 @@ import {
   ASSET_KEY_STAR,
   ASSET_KEY_CHEST_CLOSED,
   ASSET_KEY_BG_MENU,
+  ASSET_KEY_BTN_PLAY_GREEN,
+  ASSET_KEY_SETTINGS,
 } from '../../utils/Constants';
 import { MAX_LIVES, LIFE_REGEN_MINUTES, PlayerProgress } from '../../types/game.types';
 import { getPlayerProgress, setPlayerProgress } from '../../utils/RegistryHelper';
@@ -42,14 +44,14 @@ import { PlayerDataManager } from '../../sdk/PlayerDataManager';
 const log = new Logger('MainMenuScene');
 
 /** Gem board preview dimensions */
-const PREVIEW_COLS = 6;
-const PREVIEW_ROWS = 5;
-const PREVIEW_GEM_SIZE = 18;
+const PREVIEW_COLS = 8;
+const PREVIEW_ROWS = 6;
+const PREVIEW_GEM_SIZE = 26;
 
 /** Layout constants */
 const LOGO_CENTER_Y = 140;
-const LOGO_MAX_WIDTH = 200;
-const LOGO_MAX_HEIGHT = 100;
+const LOGO_MAX_WIDTH = 280;
+const LOGO_MAX_HEIGHT = 140;
 const SUBTITLE_Y = 219;
 const LEVEL_BADGE_Y = 255;
 const LEVEL_BADGE_WIDTH = 140;
@@ -64,14 +66,14 @@ const PLAY_BTN_HEIGHT = 52;
 const PLAY_PULSE_SCALE = 1.03;
 const PLAY_PULSE_DURATION = 1200;
 const BANNER_Y = 558;
-const BANNER_WIDTH = 350;
-const BANNER_HEIGHT = 56;
+const BANNER_WIDTH = 280;
+const BANNER_HEIGHT = 44;
 const BANNER_RADIUS = 12;
 const BANNER_BG_ALPHA = 0.95;
 const BANNER_BORDER_ALPHA = 0.5;
-const BANNER_CHEST_SIZE = 36;
-const BANNER_CHEST_OFFSET_X = -155;
-const BANNER_CLAIM_OFFSET_X = 100;
+const BANNER_CHEST_SIZE = 30;
+const BANNER_CHEST_OFFSET_X = -120;
+const BANNER_CLAIM_OFFSET_X = 80;
 const BANNER_PULSE_SCALE = 1.02;
 const BANNER_PULSE_DURATION = 800;
 const CLAIM_FONT_SIZE = 14;
@@ -116,6 +118,7 @@ export class MainMenuScene extends Phaser.Scene {
     // Add background image if available (at depth 0)
     this.buildBackground();
     this.buildHUD();
+    this.buildSettingsButton();
     this.buildLogo();
     this.buildSubtitle();
     this.buildLevelBadge();
@@ -155,7 +158,28 @@ export class MainMenuScene extends Phaser.Scene {
 
   private buildHUD(): void {
     log.debug('buildHUD', 'Creating HUD bar');
-    new GlHUD(this);
+    new GlHUD(this).onAllPlusClick(() => {
+      log.info('buildHUD', 'HUD + tapped — navigating to shop');
+      this.scene.start(SCENE_SHOP);
+    });
+  }
+
+  // -- Settings gear (top-right corner) ----------------------------------------
+
+  private buildSettingsButton(): void {
+    if (!this.textures.exists(ASSET_KEY_SETTINGS)) return;
+
+    const gear = this.add.image(GAME_WIDTH - 36, 32, ASSET_KEY_SETTINGS);
+    const gearScale = 28 / Math.max(gear.width, gear.height);
+    gear.setScale(gearScale);
+    gear.setInteractive({ useHandCursor: true });
+    gear.setDepth(900);
+    gear.on('pointerdown', () => {
+      log.info('buildSettingsButton', 'Settings gear tapped');
+      this.showSettingsModal();
+    });
+
+    log.debug('buildSettingsButton', 'Settings gear placed');
   }
 
   // -- Logo sprite (y:76-195, centered at y=140) ------------------------------
@@ -297,24 +321,44 @@ export class MainMenuScene extends Phaser.Scene {
   private buildPlayButton(): void {
     log.debug('buildPlayButton', 'Creating Play button');
 
-    this.playButton = new GlButton(this, Math.round(GAME_WIDTH / 2), PLAY_BTN_Y, 'Play', {
-      gradient: GRADIENT_BUTTON_SUCCESS,
-      width: PLAY_BTN_WIDTH,
-      height: PLAY_BTN_HEIGHT,
-      fontSize: FONT_SIZE_MEDIUM,
-    });
-    this.playButton.onClick(() => this.onPlayTap());
+    if (this.textures.exists(ASSET_KEY_BTN_PLAY_GREEN)) {
+      // Use the play green sprite — scale to target width for prominence
+      const playSprite = this.add.image(Math.round(GAME_WIDTH / 2), PLAY_BTN_Y, ASSET_KEY_BTN_PLAY_GREEN);
+      playSprite.setDisplaySize(PLAY_BTN_WIDTH, PLAY_BTN_WIDTH * (playSprite.height / playSprite.width));
+      const scale = playSprite.scaleX;
+      playSprite.setInteractive({ useHandCursor: true });
+      playSprite.on('pointerdown', () => this.onPlayTap());
 
-    // Pulse animation
-    this.playPulseTween = this.tweens.add({
-      targets: this.playButton,
-      scaleX: { from: 1.0, to: PLAY_PULSE_SCALE },
-      scaleY: { from: 1.0, to: PLAY_PULSE_SCALE },
-      duration: PLAY_PULSE_DURATION,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
+      // Pulse animation
+      this.playPulseTween = this.tweens.add({
+        targets: playSprite,
+        scaleX: { from: scale, to: scale * PLAY_PULSE_SCALE },
+        scaleY: { from: scale, to: scale * PLAY_PULSE_SCALE },
+        duration: PLAY_PULSE_DURATION,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    } else {
+      // Fallback to GlButton
+      this.playButton = new GlButton(this, Math.round(GAME_WIDTH / 2), PLAY_BTN_Y, 'Play', {
+        gradient: GRADIENT_BUTTON_SUCCESS,
+        width: PLAY_BTN_WIDTH,
+        height: PLAY_BTN_HEIGHT,
+        fontSize: FONT_SIZE_MEDIUM,
+      });
+      this.playButton.onClick(() => this.onPlayTap());
+
+      this.playPulseTween = this.tweens.add({
+        targets: this.playButton,
+        scaleX: { from: 1.0, to: PLAY_PULSE_SCALE },
+        scaleY: { from: 1.0, to: PLAY_PULSE_SCALE },
+        duration: PLAY_PULSE_DURATION,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
   }
 
   private onPlayTap(): void {
@@ -325,9 +369,8 @@ export class MainMenuScene extends Phaser.Scene {
       return;
     }
 
-    const levelId = this.progress.currentLevel;
-    log.info('onPlayTap', 'Starting gameplay', { levelId });
-    fadeTransition(this, SCENE_GAMEPLAY, { levelId });
+    log.info('onPlayTap', 'Navigating to level select');
+    fadeTransition(this, SCENE_LEVEL_SELECT);
   }
 
   // -- No-lives modal ---------------------------------------------------------
@@ -364,6 +407,43 @@ export class MainMenuScene extends Phaser.Scene {
 
     modal.onClose(() => {
       log.info('showNoLivesModal', 'User chose to wait');
+    });
+
+    modal.show();
+  }
+
+  // -- Settings modal ----------------------------------------------------------
+
+  private showSettingsModal(): void {
+    log.info('showSettingsModal', 'Displaying settings dialog');
+
+    const modal = new GlModal(this, { title: 'Settings' });
+
+    const soundEnabled = this.registry.get('soundEnabled') !== false;
+
+    const soundBtn = new GlButton(this, 0, 0, soundEnabled ? 'Sound: ON' : 'Sound: OFF', {
+      width: 180, height: 44,
+      gradient: soundEnabled ? GRADIENT_BUTTON_SUCCESS : GRADIENT_BUTTON_PRIMARY,
+      fontSize: FONT_SIZE_SMALL,
+    });
+    soundBtn.onClick(() => {
+      const newState = this.registry.get('soundEnabled') === false;
+      this.registry.set('soundEnabled', newState);
+      log.info('showSettingsModal', 'Sound toggled', { enabled: newState });
+      modal.hide();
+      this.showSettingsModal();
+    });
+    modal.addContent(soundBtn);
+
+    const versionText = this.add.text(0, 0, 'Gem Link v0.3.0', {
+      fontFamily: FONT_FAMILY,
+      fontSize: `${FONT_SIZE_XS}px`,
+      color: `#${UI_COLOR_TEXT_DIM.toString(16).padStart(6, '0')}`,
+    }).setOrigin(0.5, 0);
+    modal.addContent(versionText);
+
+    modal.onClose(() => {
+      log.info('showSettingsModal', 'Settings closed');
     });
 
     modal.show();

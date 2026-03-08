@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gem Link — Asset Review</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a0a2e; color: #fff; font-family: Arial, sans-serif; padding: 20px; }
+  h1 { text-align: center; margin-bottom: 20px; color: #ffd700; }
+  h2 { margin: 20px 0 10px; color: #88ccff; border-bottom: 1px solid #333; padding-bottom: 5px; }
+  h3 { margin: 12px 0 8px; color: #aaddff; font-size: 14px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 30px; }
+  .card {
+    background: #2a1a3e;
+    border: 2px solid #444;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    width: 160px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .card img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    image-rendering: auto;
+    display: block;
+    margin: 0 auto;
+  }
+  .card .label { margin-top: 8px; font-size: 11px; color: #aaa; word-break: break-all; }
+  .card .name { font-size: 13px; font-weight: bold; margin-top: 4px; }
+  .card .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: bold; margin-top: 4px;
+  }
+  .badge-primary { background: #ffd700; color: #000; }
+  .badge-new { background: #44cc44; color: #000; }
+  .badge-swapped { background: #ff6644; color: #fff; }
+  .badge-tbd { background: #ff9900; color: #000; }
+
+  .dark-bg img { background: #1a0a2e; }
+  .checker-bg img {
+    background: repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 50% / 16px 16px;
+  }
+
+  .board-preview {
+    display: grid;
+    grid-template-columns: repeat(8, 48px);
+    gap: 4px;
+    margin: 10px 0;
+    padding: 10px;
+    background: #2a1a3e;
+    border-radius: 12px;
+    width: fit-content;
+  }
+  .board-preview img { width: 48px; height: 48px; object-fit: contain; }
+
+  .toggle-bar { text-align: center; margin-bottom: 20px; }
+  .toggle-bar button {
+    padding: 8px 16px; margin: 0 4px; border: none; border-radius: 6px;
+    cursor: pointer; font-size: 14px; background: #444; color: #fff;
+  }
+  .toggle-bar button.active { background: #ffd700; color: #000; }
+
+  .logo-card { width: 220px; }
+  .logo-card img { width: 200px; height: auto; max-height: 120px; }
+  .wide-card { width: 180px; }
+  .wide-card img { width: 140px; height: auto; max-height: 100px; }
+  .bg-card { width: 220px; }
+  .bg-card img { width: 180px; height: 250px; object-fit: cover; border-radius: 8px; }
+  .frame-card { width: 220px; }
+  .frame-card img { width: 180px; height: 180px; object-fit: contain; }
+  .scene-card { width: 280px; }
+  .scene-card img { width: 240px; height: auto; max-height: 160px; }
+
+  .summary {
+    background: #2a1a3e; border-radius: 8px; padding: 16px; margin-bottom: 20px;
+    font-size: 14px; line-height: 1.8;
+  }
+  .summary span { color: #ffd700; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Gem Link — Asset Review</h1>
+
+<div class="summary">
+  <strong>Asset Summary:</strong>
+  <span>6</span> primary gems |
+  <span>25</span> extra gems |
+  <span>9</span> UI sprites |
+  <span>3</span> chests |
+  <span>5</span> frames |
+  <span>20</span> backgrounds |
+  <span>4</span> banners |
+  <span>11</span> scene elements |
+  <span>5</span> symbols |
+  <span>6</span> buttons |
+  <span>36</span> typography
+  = <span>135</span> total entries
+  &nbsp;|&nbsp; Build: <span style="color:#44cc44;">4.02 MB GREEN</span>
+</div>
+
+<div class="toggle-bar">
+  <button class="active" onclick="setBg('checker')">Checker BG</button>
+  <button onclick="setBg('dark')">Dark BG</button>
+  <button onclick="setBg('white')">White BG</button>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Primary Gems (used in game board)</h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="grid checker-bg" id="gems-grid">
+  <div class="card">
+    <img src="public/assets/gems/gem_heart.png">
+    <div class="name">Heart (Red)</div>
+    <div class="label">gem_heart</div>
+    <div class="badge badge-swapped">SWAPPED</div>
+    <div class="label">ruby-briolette</div>
+  </div>
+  <div class="card">
+    <img src="public/assets/gems/gem_diamond.png">
+    <div class="name">Diamond (Blue)</div>
+    <div class="label">gem_diamond</div>
+    <div class="badge badge-swapped">SWAPPED</div>
+    <div class="label">sapphire-marquise</div>
+  </div>
+  <div class="card">
+    <img src="public/assets/gems/gem_square.png">
+    <div class="name">Square (Green)</div>
+    <div class="label">gem_square</div>
+    <div class="badge badge-primary">KEPT</div>
+  </div>
+  <div class="card">
+    <img src="public/assets/gems/gem_circle.png">
+    <div class="name">Circle (Purple)</div>
+    <div class="label">gem_circle</div>
+    <div class="badge badge-primary">KEPT</div>
+  </div>
+  <div class="card">
+    <img src="public/assets/gems/gem_triangle.png">
+    <div class="name">Triangle (Yellow)</div>
+    <div class="label">gem_triangle</div>
+    <div class="badge badge-tbd">TBD</div>
+    <div class="label">citrine-triangle</div>
+  </div>
+  <div class="card">
+    <img src="public/assets/gems/gem_star.png">
+    <div class="name">Star (6th)</div>
+    <div class="label">gem_star</div>
+    <div class="badge badge-swapped">SWAPPED</div>
+    <div class="label">aqua-shield</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Board Preview (8x8 at game size: 48px)</h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="board-preview" id="board-preview"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>New Yellow Gem Candidates <span style="color:#ff9900; font-size:14px;">(pick one for gem_triangle!)</span></h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="grid checker-bg">
+  <div class="card"><img src="review-only/gems/extra/gem_yellow_wide_navette.png"><div class="name">Yellow Navette</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_yellow_wide_shield.png"><div class="name">Yellow Shield</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_yellow_wide_lozenge.png"><div class="name">Yellow Lozenge</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_yellow_wide_kite.png"><div class="name">Yellow Kite</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_yellow_wide_radiant.png"><div class="name">Yellow Radiant</div><div class="badge badge-new">NEW</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>New Orange/Star Gem Candidates <span style="color:#ff9900; font-size:14px;">(pick one for gem_star!)</span></h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="grid checker-bg">
+  <div class="card"><img src="review-only/gems/extra/gem_orange_wide_baguette.png"><div class="name">Orange Baguette</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_orange_wide_hexcut.png"><div class="name">Orange Hexcut</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_orange_wide_chevron.png"><div class="name">Orange Chevron</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_orange_wide_pear.png"><div class="name">Orange Pear</div><div class="badge badge-new">NEW</div></div>
+</div>
+<div class="grid checker-bg">
+  <div class="card"><img src="review-only/gems/extra/gem_orange_wide_trillion.png"><div class="name">Orange Trillion</div><div class="badge badge-new">NEW</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Extra Gems (all alternates)</h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="grid checker-bg">
+  <div class="card"><img src="review-only/gems/extra/gem_ruby_round.png"><div class="name">Ruby Round</div><div class="label">old primary</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_sapphire_diamond.png"><div class="name">Sapphire Diamond</div><div class="label">old primary</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_orange_starcut.png"><div class="name">Orange Starcut</div><div class="label">old primary</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_ruby_briolette.png"><div class="name">Ruby Briolette</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_sapphire_marquise.png"><div class="name">Sapphire Marquise</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_emerald_pear.png"><div class="name">Emerald Pear</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_amethyst_kite.png"><div class="name">Amethyst Kite</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_citrine_navette.png"><div class="name">Citrine Navette</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_aqua_shield.png"><div class="name">Aqua Shield</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_pink_lozenge.png"><div class="name">Pink Lozenge</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_lime_pentagon.png"><div class="name">Lime Pentagon</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_violet_chevron.png"><div class="name">Violet Chevron</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_crimson_radiant.png"><div class="name">Crimson Radiant</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_cyan_arrowhead.png"><div class="name">Cyan Arrowhead</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_amber_hexstar.png"><div class="name">Amber Hexstar</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_magenta_baguette.png"><div class="name">Magenta Baguette</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_iceblue_trapezoid.png"><div class="name">Iceblue Trapezoid</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_citrine_triangle.png"><div class="name">Citrine Triangle</div><div class="label">old primary</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_aqua_shield_old.png"><div class="name">Aqua Shield</div><div class="label">old primary</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_midnightblue_wide_shield.png"><div class="name">Midnight Blue Shield</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_cobaltblue_wide_radiant.png"><div class="name">Cobalt Blue Radiant</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_teal_wide_kite.png"><div class="name">Teal Kite</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_aquamarine_wide_chevron.png"><div class="name">Aquamarine Chevron</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_magenta_wide_baguette.png"><div class="name">Magenta Wide Baguette</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_fuchsia_wide_rhombus.png"><div class="name">Fuchsia Rhombus</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_rosepink_wide_shield.png"><div class="name">Rose Pink Shield</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_indigo_wide_emeraldcut.png"><div class="name">Indigo Emerald Cut</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/gems/extra/gem_lilac_wide_hexcut.png"><div class="name">Lilac Hex Cut</div><div class="badge badge-new">NEW</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>UI Sprites</h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="grid checker-bg">
+  <div class="card logo-card"><img src="public/assets/ui/ui_logo.png"><div class="name">Logo</div></div>
+  <div class="card"><img src="public/assets/ui/ui_coin.png"><div class="name">Coin</div></div>
+  <div class="card"><img src="public/assets/ui/ui_heart.png"><div class="name">Heart</div></div>
+  <div class="card"><img src="public/assets/ui/ui_gem.png"><div class="name">Gem Currency</div></div>
+  <div class="card">
+    <img src="public/assets/ui/ui_star.png">
+    <div class="name">Star</div>
+    <div class="badge badge-swapped">SWAPPED</div>
+    <div class="label">star-menu-icon</div>
+  </div>
+  <div class="card"><img src="public/assets/ui/ui_bomb.png"><div class="name">Bomb</div></div>
+  <div class="card"><img src="public/assets/ui/ui_rainbow.png"><div class="name">Rainbow</div></div>
+  <div class="card"><img src="public/assets/ui/ui_hammer.png"><div class="name">Hammer</div></div>
+  <div class="card"><img src="public/assets/ui/circle_rainbow.png"><div class="name">Rainbow Circle</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Chests</h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="grid checker-bg">
+  <div class="card"><img src="public/assets/ui/ui_chest_open.png"><div class="name">Chest Open</div><div class="label">gold (in build)</div></div>
+  <div class="card"><img src="public/assets/ui/ui_chest_closed.png"><div class="name">Chest Closed</div><div class="label">blue (in build)</div></div>
+  <div class="card"><img src="review-only/ui/extra/chest_red.png"><div class="name">Chest Red</div><div class="badge badge-new">NEW</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Backgrounds (20 total)</h2>
+<!-- ═══════════════════════════════════════ -->
+<h3>Primary (in build — assigned to game scenes)</h3>
+<div class="grid checker-bg">
+  <div class="card bg-card"><img src="public/assets/backgrounds/bg_gameplay.png"><div class="name">Gameplay</div><div class="label">forest-day</div></div>
+  <div class="card bg-card"><img src="public/assets/backgrounds/bg_menu.png"><div class="name">Main Menu</div><div class="label">forest-main</div></div>
+  <div class="card bg-card"><img src="public/assets/backgrounds/bg_shop.png"><div class="name">Shop</div><div class="label">meadow</div></div>
+  <div class="card bg-card"><img src="public/assets/backgrounds/bg_level_select.png"><div class="name">Level Select</div><div class="label">mountain</div></div>
+</div>
+<h3>Extra Backgrounds <span style="color:#aaa; font-size:12px;">(review-only, swap-in ready)</span></h3>
+<div class="grid checker-bg">
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_waterfall.png"><div class="name">Waterfall</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_sunset.png"><div class="name">Sunset</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_river.png"><div class="name">River</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_night_glow.png"><div class="name">Night Glow</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_forest_dawn.png"><div class="name">Forest Dawn</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_forest_day.png"><div class="name">Forest Day</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_forest_sunset.png"><div class="name">Forest Sunset</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_forest_night.png"><div class="name">Forest Night</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_misty_waterfall.png"><div class="name">Misty Waterfall</div><div class="badge badge-new">NEW</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_emerald_forest.png"><div class="name">Emerald Forest</div><div class="badge badge-new">NEW</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_crystal_canyon.png"><div class="name">Crystal Canyon</div><div class="badge badge-new">NEW</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_enchanted_river.png"><div class="name">Enchanted River</div><div class="badge badge-new">NEW</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_moonlit_grove.png"><div class="name">Moonlit Grove</div><div class="badge badge-new">NEW</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_highland_valley.png"><div class="name">Highland Valley</div><div class="badge badge-new">NEW</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_ancient_ruins.png"><div class="name">Ancient Ruins</div><div class="badge badge-new">NEW</div></div>
+  <div class="card bg-card"><img src="review-only/backgrounds/bg_rainbow_falls.png"><div class="name">Rainbow Falls</div><div class="badge badge-new">NEW</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Board Frames (5)</h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="grid checker-bg">
+  <div class="card frame-card"><img src="public/assets/frames/frame_board.png"><div class="name">Level Frame</div><div class="label">in build</div></div>
+  <div class="card frame-card"><img src="review-only/frames/frame_board_v2.png"><div class="name">Board Frame</div></div>
+  <div class="card frame-card"><img src="review-only/frames/frame_ornate_gold.png"><div class="name">Ornate Gold</div></div>
+  <div class="card frame-card"><img src="review-only/frames/frame_wood_gold.png"><div class="name">Wood Gold</div></div>
+  <div class="card frame-card"><img src="review-only/frames/frame_crystal.png"><div class="name">Crystal</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Banners (4)</h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="grid checker-bg">
+  <div class="card wide-card"><img src="review-only/ui/extra/banner_gold.png"><div class="name">Gold Banner</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/banner_blue.png"><div class="name">Blue Banner</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/banner_red.png"><div class="name">Red Banner</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/banner_green.png"><div class="name">Green Banner</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Scene Map Elements (11) <span style="color:#44cc44; font-size:14px;">(+7 new!)</span></h2>
+<!-- ═══════════════════════════════════════ -->
+<h3>Path Segments</h3>
+<div class="grid checker-bg">
+  <div class="card scene-card"><img src="review-only/ui/extra/map_segment_01.png"><div class="name">Segment 1</div></div>
+  <div class="card scene-card"><img src="review-only/ui/extra/map_segment_02.png"><div class="name">Segment 2</div></div>
+  <div class="card scene-card"><img src="review-only/ui/extra/map_segment_03.png"><div class="name">Segment 3</div></div>
+  <div class="card scene-card"><img src="review-only/ui/extra/map_segment_04.png"><div class="name">Segment 4</div></div>
+</div>
+<h3>Level Nodes, Bridge, Gate, Decorations</h3>
+<div class="grid checker-bg">
+  <div class="card"><img src="review-only/ui/extra/map_node_wood.png"><div class="name">Node Wood</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/ui/extra/map_node_stone.png"><div class="name">Node Stone</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/ui/extra/map_node_gold.png"><div class="name">Node Gold</div><div class="badge badge-new">NEW</div></div>
+  <div class="card scene-card"><img src="review-only/ui/extra/map_bridge.png"><div class="name">Bridge</div><div class="badge badge-new">NEW</div></div>
+  <div class="card scene-card"><img src="review-only/ui/extra/map_gate.png"><div class="name">Gate</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/ui/extra/map_lantern.png"><div class="name">Lantern</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/ui/extra/map_signpost.png"><div class="name">Signpost</div><div class="badge badge-new">NEW</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Symbols (5)</h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="grid checker-bg">
+  <div class="card"><img src="review-only/ui/extra/icon_plus.png"><div class="name">Plus</div></div>
+  <div class="card"><img src="review-only/ui/extra/icon_arrow_right.png"><div class="name">Arrow Right</div></div>
+  <div class="card"><img src="review-only/ui/extra/icon_arrow_left.png"><div class="name">Arrow Left</div></div>
+  <div class="card"><img src="review-only/ui/extra/icon_arrow_curved.png"><div class="name">Arrow Curved</div></div>
+  <div class="card"><img src="review-only/ui/extra/icon_settings.png"><div class="name">Settings Gear</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Buttons & Extra UI</h2>
+<!-- ═══════════════════════════════════════ -->
+<div class="grid checker-bg">
+  <div class="card wide-card"><img src="review-only/ui/extra/btn_play.png"><div class="name">Play</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/btn_play_alt.png"><div class="name">Play Alt</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/btn_play_green.png"><div class="name">Play Green</div><div class="badge badge-new">NEW</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/btn_shop.png"><div class="name">Shop</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/btn_collect.png"><div class="name">Collect</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/btn_next.png"><div class="name">Next</div></div>
+</div>
+<div class="grid checker-bg">
+  <div class="card wide-card"><img src="review-only/ui/extra/progress_bar_empty.png"><div class="name">Progress Empty</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/progress_bar_full.png"><div class="name">Progress Full</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/header_level.png"><div class="name">Level Header</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/header_shop.png"><div class="name">Shop Header</div></div>
+  <div class="card wide-card"><img src="review-only/ui/extra/level_complete.png"><div class="name">Level Complete</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2>Typography (full alphabet + digits)</h2>
+<!-- ═══════════════════════════════════════ -->
+<h3>Digits</h3>
+<div class="grid checker-bg">
+  <div class="card"><img src="review-only/typography/digit_0.png"><div class="name">0</div></div>
+  <div class="card"><img src="review-only/typography/digit_1.png"><div class="name">1</div></div>
+  <div class="card"><img src="review-only/typography/digit_2.png"><div class="name">2</div></div>
+  <div class="card"><img src="review-only/typography/digit_3.png"><div class="name">3</div></div>
+  <div class="card"><img src="review-only/typography/digit_4.png"><div class="name">4</div></div>
+  <div class="card"><img src="review-only/typography/digit_5.png"><div class="name">5</div></div>
+  <div class="card"><img src="review-only/typography/digit_6.png"><div class="name">6</div></div>
+  <div class="card"><img src="review-only/typography/digit_7.png"><div class="name">7</div></div>
+  <div class="card"><img src="review-only/typography/digit_8.png"><div class="name">8</div></div>
+  <div class="card"><img src="review-only/typography/digit_9.png"><div class="name">9</div></div>
+</div>
+<h3>Letters (complete A-Z!)</h3>
+<div class="grid checker-bg">
+  <div class="card"><img src="review-only/typography/letter_a.png"><div class="name">A</div></div>
+  <div class="card"><img src="review-only/typography/letter_b.png"><div class="name">B</div></div>
+  <div class="card"><img src="review-only/typography/letter_c.png"><div class="name">C</div></div>
+  <div class="card"><img src="review-only/typography/letter_d.png"><div class="name">D</div></div>
+  <div class="card"><img src="review-only/typography/letter_e.png"><div class="name">E</div></div>
+  <div class="card"><img src="review-only/typography/letter_f.png"><div class="name">F</div></div>
+  <div class="card"><img src="review-only/typography/letter_g.png"><div class="name">G</div></div>
+  <div class="card"><img src="review-only/typography/letter_h.png"><div class="name">H</div></div>
+  <div class="card"><img src="review-only/typography/letter_i.png"><div class="name">I</div></div>
+  <div class="card"><img src="review-only/typography/letter_j.png"><div class="name">J</div></div>
+  <div class="card"><img src="review-only/typography/letter_k.png"><div class="name">K</div></div>
+  <div class="card"><img src="review-only/typography/letter_l.png"><div class="name">L</div></div>
+  <div class="card"><img src="review-only/typography/letter_m.png"><div class="name">M</div></div>
+  <div class="card"><img src="review-only/typography/letter_n.png"><div class="name">N</div></div>
+  <div class="card"><img src="review-only/typography/letter_o.png"><div class="name">O</div></div>
+  <div class="card"><img src="review-only/typography/letter_p.png"><div class="name">P</div></div>
+  <div class="card"><img src="review-only/typography/letter_q.png"><div class="name">Q</div></div>
+  <div class="card"><img src="review-only/typography/letter_r.png"><div class="name">R</div></div>
+  <div class="card"><img src="review-only/typography/letter_s.png"><div class="name">S</div></div>
+  <div class="card"><img src="review-only/typography/letter_t.png"><div class="name">T</div></div>
+  <div class="card"><img src="review-only/typography/letter_u.png"><div class="name">U</div></div>
+  <div class="card"><img src="review-only/typography/letter_v.png"><div class="name">V</div></div>
+  <div class="card"><img src="review-only/typography/letter_w.png"><div class="name">W</div></div>
+  <div class="card"><img src="review-only/typography/letter_x.png"><div class="name">X</div><div class="badge badge-new">NEW</div></div>
+  <div class="card"><img src="review-only/typography/letter_y.png"><div class="name">Y</div></div>
+  <div class="card"><img src="review-only/typography/letter_z.png"><div class="name">Z</div></div>
+</div>
+
+<script>
+// Build 8x8 board preview
+const gemPaths = [
+  'public/assets/gems/gem_heart.png',
+  'public/assets/gems/gem_diamond.png',
+  'public/assets/gems/gem_square.png',
+  'public/assets/gems/gem_circle.png',
+  'public/assets/gems/gem_triangle.png',
+  'public/assets/gems/gem_star.png',
+];
+const board = document.getElementById('board-preview');
+for (let i = 0; i < 64; i++) {
+  const img = document.createElement('img');
+  img.src = gemPaths[Math.floor(Math.random() * gemPaths.length)];
+  board.appendChild(img);
+}
+
+function setBg(mode) {
+  document.querySelectorAll('.toggle-bar button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.grid, .board-preview').forEach(g => {
+    g.classList.remove('checker-bg', 'dark-bg');
+    if (mode === 'checker') g.classList.add('checker-bg');
+    else if (mode === 'dark') g.classList.add('dark-bg');
+    else {
+      g.querySelectorAll('img').forEach(img => img.style.background = '#fff');
+      return;
+    }
+    g.querySelectorAll('img').forEach(img => img.style.background = '');
+  });
+}
+</script>
+
+</body>
+</html>

@@ -37,6 +37,17 @@ import {
   ASSET_KEY_BG_SHOP,
   ASSET_KEY_BG_LEVEL_SELECT,
   ASSET_KEY_FRAME_BOARD,
+  ASSET_KEY_BTN_PLAY_GREEN,
+  ASSET_KEY_ARROW_RIGHT,
+  ASSET_KEY_ARROW_LEFT,
+  ASSET_KEY_SETTINGS,
+  ASSET_KEY_HEADER_LEVEL,
+  ASSET_KEY_HEADER_SHOP,
+  ASSET_KEY_PROGRESS_EMPTY,
+  ASSET_KEY_PROGRESS_FULL,
+  ASSET_KEY_BANNER_GREEN,
+  ASSET_KEY_LEVEL_COMPLETE,
+  DIGIT_TEXTURE_KEYS,
 } from '../../utils/Constants';
 
 const log = new Logger('PreloadScene');
@@ -172,9 +183,26 @@ export class PreloadScene extends Phaser.Scene {
     // Queue assets — Frame images (optional - graceful failure)
     this.load.image(ASSET_KEY_FRAME_BOARD, 'assets/frames/frame_board.png');
 
+    // Queue assets — UI sprite assets (promoted from extras)
+    this.load.image(ASSET_KEY_BTN_PLAY_GREEN, 'assets/ui/btn_play_green.png');
+    this.load.image(ASSET_KEY_ARROW_RIGHT, 'assets/ui/icon_arrow_right.png');
+    this.load.image(ASSET_KEY_ARROW_LEFT, 'assets/ui/icon_arrow_left.png');
+    this.load.image(ASSET_KEY_SETTINGS, 'assets/ui/icon_settings.png');
+    this.load.image(ASSET_KEY_HEADER_LEVEL, 'assets/ui/header_level.png');
+    this.load.image(ASSET_KEY_HEADER_SHOP, 'assets/ui/header_shop.png');
+    this.load.image(ASSET_KEY_PROGRESS_EMPTY, 'assets/ui/progress_bar_empty.png');
+    this.load.image(ASSET_KEY_PROGRESS_FULL, 'assets/ui/progress_bar_full.png');
+    this.load.image(ASSET_KEY_BANNER_GREEN, 'assets/ui/banner_green.png');
+    this.load.image(ASSET_KEY_LEVEL_COMPLETE, 'assets/ui/level_complete.png');
+
+    // Queue assets — Digit sprites (0-9)
+    for (const key of DIGIT_TEXTURE_KEYS) {
+      this.load.image(key, `assets/typography/${key}.png`);
+    }
+
     // Queue assets — Level data
     this.load.json('levels', 'assets/levels/levels.json');
-    log.info('preload', 'Asset queue ready — 6 gems, 11 UI, 4 backgrounds, 1 frame, 1 JSON');
+    log.info('preload', 'Asset queue ready — 6 gems, 21 UI, 10 digits, 4 backgrounds, 1 frame, 1 JSON');
   }
 
   create(): void {

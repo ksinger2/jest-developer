@@ -20,8 +20,10 @@
     "phaser": "3.80.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "archiver": "^7.0.0",
     "jsdom": "^28.1.0",
+    "sharp": "^0.34.5",
     "typescript": "^5.4.0",
     "vite": "^5.4.0",
     "vitest": "^4.0.18"

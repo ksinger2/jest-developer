@@ -33,7 +33,11 @@ import {
   GRADIENT_BUTTON_SUCCESS,
   GRADIENT_BUTTON_PRIMARY,
   GRADIENT_BUTTON_DANGER,
+  ASSET_KEY_LEVEL_COMPLETE,
+  DIGIT_TEXTURE_KEYS,
+  SCENE_SHOP,
 } from '../../utils/Constants';
+import { SpriteNumber } from '../../ui/SpriteNumber';
 import { LevelResult, StarRating } from '../../types/game.types';
 import { getPlayerProgress, setPlayerProgress } from '../../utils/RegistryHelper';
 import { PlayerDataManager } from '../../sdk/PlayerDataManager';
@@ -48,6 +52,7 @@ const CENTER_X = GAME_WIDTH / 2;
 export class LevelCompleteScene extends Phaser.Scene {
   private result!: LevelResult;
   private scoreText!: Phaser.GameObjects.Text;
+  private spriteScore?: SpriteNumber;
   private offerManager!: OfferManager;
 
   constructor() {
@@ -91,6 +96,7 @@ export class LevelCompleteScene extends Phaser.Scene {
     }
 
     this.buildHUD();
+    this.buildLevelCompleteSprite();
     this.buildStarDisplay();
     this.buildRibbon();
     this.buildScoreDisplay();
@@ -152,8 +158,22 @@ export class LevelCompleteScene extends Phaser.Scene {
   }
 
   private buildHUD(): void {
-    new GlHUD(this);
+    new GlHUD(this).onAllPlusClick(() => {
+      this.scene.start(SCENE_SHOP);
+    });
     log.debug('buildHUD', 'HUD rendered');
+  }
+
+  private buildLevelCompleteSprite(): void {
+    if (!this.textures.exists(ASSET_KEY_LEVEL_COMPLETE)) return;
+
+    const sprite = this.add.image(CENTER_X, 60, ASSET_KEY_LEVEL_COMPLETE);
+    const maxW = 200;
+    const scale = maxW / sprite.width;
+    sprite.setScale(Math.min(scale, 1));
+    sprite.setDepth(5);
+
+    log.debug('buildLevelCompleteSprite', 'Level complete sprite placed');
   }
 
   private buildStarDisplay(): void {
@@ -168,26 +188,41 @@ export class LevelCompleteScene extends Phaser.Scene {
   }
 
   private buildScoreDisplay(): void {
-    this.scoreText = this.add.text(CENTER_X, 220, '0', {
-      fontFamily: FONT_FAMILY,
-      fontSize: `${FONT_SIZE_LARGE}px`,
-      color: '#FFD700',
-    }).setOrigin(0.5);
+    // Use sprite digits if available, text fallback otherwise
+    const hasDigits = this.textures.exists(DIGIT_TEXTURE_KEYS[0]);
 
-    const counter = { value: 0 };
-    this.tweens.add({
-      targets: counter,
-      value: this.result.score,
-      duration: SCORE_ROLL_DURATION,
-      ease: 'Cubic.easeOut',
-      onUpdate: () => {
-        this.scoreText.setText(Math.floor(counter.value).toLocaleString());
-      },
-      onComplete: () => {
-        this.scoreText.setText(this.result.score.toLocaleString());
-        log.debug('buildScoreDisplay', 'Score roll-up complete', { score: this.result.score });
-      },
-    });
+    if (hasDigits) {
+      this.spriteScore = new SpriteNumber(this, {
+        x: CENTER_X,
+        y: 220,
+        digitHeight: 28,
+        align: 'center',
+        value: 0,
+        commas: true,
+      });
+      this.spriteScore.animateTo(this, this.result.score, SCORE_ROLL_DURATION);
+    } else {
+      this.scoreText = this.add.text(CENTER_X, 220, '0', {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${FONT_SIZE_LARGE}px`,
+        color: '#FFD700',
+      }).setOrigin(0.5);
+
+      const counter = { value: 0 };
+      this.tweens.add({
+        targets: counter,
+        value: this.result.score,
+        duration: SCORE_ROLL_DURATION,
+        ease: 'Cubic.easeOut',
+        onUpdate: () => {
+          this.scoreText.setText(Math.floor(counter.value).toLocaleString());
+        },
+        onComplete: () => {
+          this.scoreText.setText(this.result.score.toLocaleString());
+          log.debug('buildScoreDisplay', 'Score roll-up complete', { score: this.result.score });
+        },
+      });
+    }
 
     log.debug('buildScoreDisplay', 'Score counter animating', { target: this.result.score });
   }

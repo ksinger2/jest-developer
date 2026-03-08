@@ -15,6 +15,7 @@ import {
   SCENE_LEVEL_SELECT,
   SCENE_GAMEPLAY,
   SCENE_MAIN_MENU,
+  SCENE_SHOP,
   FONT_FAMILY,
   FONT_SIZE_SMALL,
   GRADIENT_BUTTON_SUCCESS,
@@ -24,6 +25,8 @@ import {
   EASE_QUAD,
   COLOR_EMERALD,
   ASSET_KEY_BG_LEVEL_SELECT,
+  ASSET_KEY_HEADER_LEVEL,
+  ASSET_KEY_ARROW_LEFT,
 } from '../../utils/Constants';
 import { StarRating } from '../../types/game.types';
 import { getPlayerProgress } from '../../utils/RegistryHelper';
@@ -57,6 +60,9 @@ export class LevelSelectScene extends Phaser.Scene {
   private currentLevel: number = 1;
   private starRatings: Record<string, StarRating> = {};
   private nodes: LevelNode[] = [];
+  private selectedRing?: Phaser.GameObjects.Graphics;
+  private selectedRingTween?: Phaser.Tweens.Tween;
+  private playBtnText?: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: SCENE_LEVEL_SELECT });
@@ -83,14 +89,31 @@ export class LevelSelectScene extends Phaser.Scene {
     this.drawLevelNodes();
     this.setupScrolling();
 
-    new GlHUD(this);
+    new GlHUD(this).onAllPlusClick(() => {
+      this.scene.start(SCENE_SHOP);
+    });
 
-    const playBtn = new GlButton(this, GAME_WIDTH / 2, 565, 'PLAY', {
+    // Level header sprite at top
+    if (this.textures.exists(ASSET_KEY_HEADER_LEVEL)) {
+      const header = this.add.image(GAME_WIDTH / 2, 54, ASSET_KEY_HEADER_LEVEL);
+      const headerScale = 180 / header.width;
+      header.setScale(headerScale);
+      header.setScrollFactor(0);
+      header.setDepth(900);
+      log.debug('create', 'Level header sprite placed');
+    }
+
+    const playBtn = new GlButton(this, GAME_WIDTH / 2, 565, `PLAY Level ${this.currentLevel}`, {
       gradient: GRADIENT_BUTTON_SUCCESS,
-      width: 160,
+      width: 200,
       height: 44,
     }).onClick(() => this.onPlayPressed());
     playBtn.setScrollFactor(0);
+
+    // Keep reference to update label when selection changes
+    this.playBtnText = (playBtn as any).list?.find(
+      (c: any) => c instanceof Phaser.GameObjects.Text
+    ) as Phaser.GameObjects.Text | undefined;
 
     this.addBackButton();
 
@@ -209,25 +232,16 @@ export class LevelSelectScene extends Phaser.Scene {
   private drawUnlockedNode(node: LevelNode, isCurrent: boolean, stars: StarRating): void {
     const gfx = this.add.graphics();
 
-    if (isCurrent) {
-      const glowRing = this.add.graphics();
-      glowRing.lineStyle(4, 0xffffff, 0.8);
-      glowRing.strokeCircle(node.x, node.y, NODE_RADIUS_UNLOCKED + 6);
-
-      this.tweens.add({
-        targets: glowRing,
-        alpha: { from: 0.3, to: 1 },
-        duration: 800,
-        yoyo: true,
-        repeat: -1,
-        ease: EASE_QUAD,
-      });
-    }
-
-    gfx.lineStyle(3, GOLD_BORDER, 1);
+    // Gold-bordered green circle for all unlocked nodes
     gfx.fillStyle(COLOR_EMERALD, 1);
     gfx.fillCircle(node.x, node.y, NODE_RADIUS_UNLOCKED);
+    gfx.lineStyle(3, GOLD_BORDER, 1);
     gfx.strokeCircle(node.x, node.y, NODE_RADIUS_UNLOCKED);
+
+    // Selection ring for current/selected level
+    if (isCurrent) {
+      this.showSelectionRing(node.x, node.y);
+    }
 
     this.add.text(node.x, node.y, `${node.level}`, {
       fontFamily: FONT_FAMILY,
@@ -241,19 +255,45 @@ export class LevelSelectScene extends Phaser.Scene {
     }
 
     const hitArea = this.add
-      .zone(node.x, node.y, NODE_RADIUS_UNLOCKED * 2, NODE_RADIUS_UNLOCKED * 2)
+      .zone(node.x, node.y, NODE_RADIUS_UNLOCKED * 2 + 10, NODE_RADIUS_UNLOCKED * 2 + 10)
       .setInteractive({ useHandCursor: true });
 
     hitArea.on('pointerdown', () => {
       log.info('nodePressed', 'Level node tapped', { level: node.level });
       this.currentLevel = node.level;
+      this.showSelectionRing(node.x, node.y);
+      if (this.playBtnText) {
+        this.playBtnText.setText(`PLAY Level ${node.level}`);
+      }
+    });
+  }
+
+  private showSelectionRing(x: number, y: number): void {
+    if (this.selectedRingTween) {
+      this.selectedRingTween.destroy();
+      this.selectedRingTween = undefined;
+    }
+    if (this.selectedRing) {
+      this.selectedRing.destroy();
+    }
+    this.selectedRing = this.add.graphics();
+    this.selectedRing.lineStyle(4, 0xffffff, 0.9);
+    this.selectedRing.strokeCircle(x, y, NODE_RADIUS_UNLOCKED + 6);
+
+    this.selectedRingTween = this.tweens.add({
+      targets: this.selectedRing,
+      alpha: { from: 0.4, to: 1 },
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: EASE_QUAD,
     });
   }
 
   private drawStarDots(cx: number, cy: number, stars: StarRating): void {
     const gfx = this.add.graphics();
-    const dotRadius = 3;
-    const dotSpacing = 10;
+    const dotRadius = 4;
+    const dotSpacing = 12;
     const startX = cx - dotSpacing;
 
     for (let i = 0; i < 3; i++) {
@@ -265,24 +305,28 @@ export class LevelSelectScene extends Phaser.Scene {
 
   private drawLockedNode(node: LevelNode): void {
     const gfx = this.add.graphics();
-    gfx.fillStyle(GRAY_FILL, 0.6);
+    // Dark semi-transparent backdrop for visibility over busy backgrounds
+    gfx.fillStyle(0x000000, 0.5);
+    gfx.fillCircle(node.x, node.y, NODE_RADIUS_LOCKED + 2);
+    gfx.fillStyle(GRAY_FILL, 0.85);
     gfx.fillCircle(node.x, node.y, NODE_RADIUS_LOCKED);
+    gfx.lineStyle(2, 0x555555, 0.8);
+    gfx.strokeCircle(node.x, node.y, NODE_RADIUS_LOCKED);
 
-    // Graphics-drawn lock icon instead of emoji
+    // Lock icon
     const lockGfx = this.add.graphics();
-    lockGfx.fillStyle(0x666666, 0.8);
-    // Lock body (rounded rect)
+    lockGfx.fillStyle(0x444444, 1);
     lockGfx.fillRoundedRect(node.x - 5, node.y - 2, 10, 8, 2);
-    // Lock shackle (arc)
-    lockGfx.lineStyle(2, 0x666666, 0.8);
+    lockGfx.lineStyle(2, 0x444444, 1);
     lockGfx.beginPath();
     lockGfx.arc(node.x, node.y - 2, 5, Math.PI, 0, false);
     lockGfx.strokePath();
 
-    this.add.text(node.x, node.y + NODE_RADIUS_LOCKED + 6, `${node.level}`, {
+    this.add.text(node.x, node.y + NODE_RADIUS_LOCKED + 8, `${node.level}`, {
       fontFamily: FONT_FAMILY,
-      fontSize: '10px',
-      color: '#666666',
+      fontSize: '12px',
+      color: '#999999',
+      fontStyle: 'bold',
     }).setOrigin(0.5);
   }
 
@@ -304,15 +348,27 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   private addBackButton(): void {
-    const backBtn = new GlButton(this, 40, 565, '< BACK', {
-      width: 80,
-      height: 36,
-      gradient: GRADIENT_BUTTON_PRIMARY,
-    }).onClick(() => {
-      log.info('addBackButton', 'Navigating to main menu');
-      fadeTransition(this, SCENE_MAIN_MENU);
-    });
-    backBtn.setScrollFactor(0);
+    if (this.textures.exists(ASSET_KEY_ARROW_LEFT)) {
+      const arrow = this.add.image(36, 565, ASSET_KEY_ARROW_LEFT);
+      const arrowScale = 32 / Math.max(arrow.width, arrow.height);
+      arrow.setScale(arrowScale);
+      arrow.setScrollFactor(0);
+      arrow.setInteractive({ useHandCursor: true });
+      arrow.on('pointerdown', () => {
+        log.info('addBackButton', 'Navigating to main menu');
+        fadeTransition(this, SCENE_MAIN_MENU);
+      });
+    } else {
+      const backBtn = new GlButton(this, 40, 565, '< BACK', {
+        width: 80,
+        height: 36,
+        gradient: GRADIENT_BUTTON_PRIMARY,
+      }).onClick(() => {
+        log.info('addBackButton', 'Navigating to main menu');
+        fadeTransition(this, SCENE_MAIN_MENU);
+      });
+      backBtn.setScrollFactor(0);
+    }
   }
 
   private onPlayPressed(): void {

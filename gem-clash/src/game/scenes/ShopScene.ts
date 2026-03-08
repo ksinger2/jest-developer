@@ -33,6 +33,8 @@ import {
   ASSET_KEY_HAMMER,
   ASSET_KEY_RAINBOW,
   ASSET_KEY_BG_SHOP,
+  ASSET_KEY_HEADER_SHOP,
+  ASSET_KEY_ARROW_LEFT,
 } from '../../utils/Constants';
 import {
   PRODUCT_CATALOG,
@@ -47,50 +49,49 @@ import { PlayerDataManager } from '../../sdk/PlayerDataManager';
 
 const log = new Logger('ShopScene');
 
-// ── Layout Y anchors ──────────────────────────────────────────
-const Y_RIBBON_CENTER = 76;
-const Y_CURRENCY_TITLE = 112;
-const Y_CURRENCY_CARDS_TOP = 140;
-const Y_BOOSTER_TITLE = 280;
-const Y_BOOSTER_TILES_TOP = 308;
-const Y_FREE_GIFT_TOP = 400;
-const Y_BACK_BTN_CENTER = 478;
+// ── Layout Y anchors (redesigned for proper spacing) ─────────
+const Y_RIBBON_CENTER = 68;
+const Y_CURRENCY_TITLE = 96;
+const Y_CURRENCY_CARDS_TOP = 116;
+const Y_BOOSTER_TITLE = 244;
+const Y_BOOSTER_TILES_TOP = 264;
+const Y_FREE_GIFT_TOP = 356;
+const Y_BACK_BTN_CENTER = 440;
 
 // ── Card dimensions ───────────────────────────────────────────
 const CARD_W = 80;
-const CARD_H = 130;  // Increased to accommodate larger button
-const CARD_GAP = 10;  // Increased from 6 for better separation
+const CARD_H = 115;
+const CARD_GAP = 10;
 const CARD_BG = 0x2A1A4E;
 const CARD_BORDER = 0x6C3BD1;
-const CARD_BORDER_ALPHA = 0.7;
+const CARD_BORDER_ALPHA = 0.85;
 const CARD_RADIUS = 10;
-const CARD_ICON_SIZE = 36;
+const CARD_ICON_SIZE = 34;
 const CARD_BUY_BTN_W = 68;
-const CARD_BUY_BTN_H = 36;  // Increased from 24 for 44px min touch target compliance
-// Card buy button radius is set inside GlButton drawBackground (default 12)
+const CARD_BUY_BTN_H = 44;
 
 // ── Booster tile dimensions ───────────────────────────────────
-const TILE_W = 60;  // Slightly wider for better proportion
-const TILE_H = 88;  // Increased to accommodate larger button
+const TILE_W = 60;
+const TILE_H = 80;
 const TILE_GAP = 16;
 const TILE_BG = 0x2A1A4E;
 const TILE_BG_ALPHA = 0.8;
 const TILE_BORDER = 0x6C3BD1;
-const TILE_BORDER_ALPHA = 0.5;
+const TILE_BORDER_ALPHA = 0.6;
 const TILE_RADIUS = 8;
 const TILE_ICON_SIZE = 28;
-const TILE_BUY_BTN_W = 52;  // Slightly wider
-const TILE_BUY_BTN_H = 32;  // Increased from 20 for 44px min touch target compliance
+const TILE_BUY_BTN_W = 52;
+const TILE_BUY_BTN_H = 44;
 
 // ── Free Gift strip ───────────────────────────────────────────
 const GIFT_W = 350;
-const GIFT_H = 56;
+const GIFT_H = 50;
 const GIFT_BG = 0x2A1A4E;
 const GIFT_BG_ALPHA = 0.95;
 const GIFT_BORDER = 0xFFD700;
 const GIFT_BORDER_ALPHA = 0.6;
 const GIFT_RADIUS = 12;
-const GIFT_CHEST_SIZE = 36;
+const GIFT_CHEST_SIZE = 32;
 const GIFT_CLAIM_W = 48;
 const GIFT_CLAIM_H = 28;
 
@@ -102,7 +103,6 @@ const STAGGER_OFFSET_Y = 20;
 // ── Back button ───────────────────────────────────────────────
 const BACK_BTN_W = 140;
 const BACK_BTN_H = 44;
-// Back button radius is set inside GlButton drawBackground (default 12)
 
 /** Helper to find a product by SKU enum value */
 function findProduct(sku: ProductSKU): ProductInfo | undefined {
@@ -186,11 +186,19 @@ export class ShopScene extends Phaser.Scene {
     log.debug('buildHUD', 'HUD rendered');
   }
 
-  // ── Ribbon (y:56-96) ───────────────────────────────────────
+  // ── Shop Header / Ribbon (y:56-96) ────────────────────────
 
   private buildRibbon(): void {
-    new GlRibbon(this, Math.round(GAME_WIDTH / 2), Y_RIBBON_CENTER, 'SHOP');
-    log.debug('buildRibbon', 'Shop ribbon placed');
+    if (this.textures.exists(ASSET_KEY_HEADER_SHOP)) {
+      const header = this.add.image(Math.round(GAME_WIDTH / 2), Y_RIBBON_CENTER, ASSET_KEY_HEADER_SHOP);
+      const headerScale = 180 / header.width;
+      header.setScale(headerScale);
+      header.setDepth(5);
+      log.debug('buildRibbon', 'Shop header sprite placed');
+    } else {
+      new GlRibbon(this, Math.round(GAME_WIDTH / 2), Y_RIBBON_CENTER, 'SHOP');
+      log.debug('buildRibbon', 'Shop ribbon placed (fallback)');
+    }
   }
 
   // ── Currency Packs (y:112-264) ──────────────────────────────
@@ -262,7 +270,7 @@ export class ShopScene extends Phaser.Scene {
     }
 
     // Title text (13px bold white)
-    const titleText = this.add.text(0, -halfH + 52, label, {
+    const titleText = this.add.text(0, -halfH + 46, label, {
       fontFamily: FONT_FAMILY,
       fontSize: '13px',
       color: '#FFFFFF',
@@ -271,18 +279,18 @@ export class ShopScene extends Phaser.Scene {
     }).setOrigin(0.5, 0);
     container.add(titleText);
 
-    // Description text (11px #AAAAAA)
-    const descText = this.add.text(0, -halfH + 68, product.description, {
+    // Description text (12px #AAAAAA)
+    const descText = this.add.text(0, -halfH + 60, product.description, {
       fontFamily: FONT_FAMILY,
-      fontSize: '11px',
+      fontSize: '12px',
       color: '#AAAAAA',
       align: 'center',
-      wordWrap: { width: CARD_W - 8 },
+      wordWrap: { width: CARD_W - 6 },
     }).setOrigin(0.5, 0);
     container.add(descText);
 
-    // Buy button at bottom of card (adjusted for new card height)
-    const btnY = -halfH + 104;
+    // Buy button at bottom of card
+    const btnY = -halfH + 90;
     const buyBtn = new GlButton(this, cx, cy + btnY, `${product.priceInTokens}T`, {
       width: CARD_BUY_BTN_W,
       height: CARD_BUY_BTN_H,
@@ -372,8 +380,8 @@ export class ShopScene extends Phaser.Scene {
       container.add(fallbackG);
     }
 
-    // Label text (12px white - increased for readability)
-    const labelText = this.add.text(0, -halfH + 44, label, {
+    // Label text (12px white)
+    const labelText = this.add.text(0, -halfH + 40, label, {
       fontFamily: FONT_FAMILY,
       fontSize: '12px',
       color: '#FFFFFF',
@@ -381,8 +389,8 @@ export class ShopScene extends Phaser.Scene {
     }).setOrigin(0.5, 0);
     container.add(labelText);
 
-    // Buy button (adjusted for new tile height)
-    const btnY = -halfH + 62;
+    // Buy button
+    const btnY = -halfH + 56;
     const buyBtn = new GlButton(this, cx, cy + btnY, `${product.priceInTokens}T`, {
       width: TILE_BUY_BTN_W,
       height: TILE_BUY_BTN_H,
@@ -536,15 +544,26 @@ export class ShopScene extends Phaser.Scene {
   // ── Back Button (y:456-498) ─────────────────────────────────
 
   private buildBackButton(): void {
-    new GlButton(this, Math.round(GAME_WIDTH / 2), Y_BACK_BTN_CENTER, 'Back', {
-      width: BACK_BTN_W,
-      height: BACK_BTN_H,
-      gradient: GRADIENT_BUTTON_PRIMARY,
-      fontSize: 18,
-    }).onClick(() => {
-      log.info('buildBackButton', 'Navigating to main menu');
-      this.scene.start(SCENE_MAIN_MENU);
-    });
+    if (this.textures.exists(ASSET_KEY_ARROW_LEFT)) {
+      const arrow = this.add.image(36, Y_BACK_BTN_CENTER, ASSET_KEY_ARROW_LEFT);
+      const arrowScale = 32 / Math.max(arrow.width, arrow.height);
+      arrow.setScale(arrowScale);
+      arrow.setInteractive({ useHandCursor: true });
+      arrow.on('pointerdown', () => {
+        log.info('buildBackButton', 'Navigating to main menu');
+        this.scene.start(SCENE_MAIN_MENU);
+      });
+    } else {
+      new GlButton(this, Math.round(GAME_WIDTH / 2), Y_BACK_BTN_CENTER, 'Back', {
+        width: BACK_BTN_W,
+        height: BACK_BTN_H,
+        gradient: GRADIENT_BUTTON_PRIMARY,
+        fontSize: 18,
+      }).onClick(() => {
+        log.info('buildBackButton', 'Navigating to main menu');
+        this.scene.start(SCENE_MAIN_MENU);
+      });
+    }
   }
 
   // ── Stagger Entry Animation ─────────────────────────────────

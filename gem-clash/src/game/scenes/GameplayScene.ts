@@ -60,7 +60,14 @@ import {
   GRADIENT_BUTTON_PRIMARY,
   GRADIENT_BUTTON_GOLD,
   ASSET_KEY_BG_GAMEPLAY,
+  ASSET_KEY_PROGRESS_EMPTY,
+  ASSET_KEY_PROGRESS_FULL,
+  ASSET_KEY_FRAME_BOARD,
+  DIGIT_TEXTURE_KEYS,
+  Z_BOARD,
+  Z_GEMS,
 } from '../../utils/Constants';
+import { SpriteNumber } from '../../ui/SpriteNumber';
 import {
   GemData,
   GemState,
@@ -140,6 +147,7 @@ export class GameplayScene extends Phaser.Scene {
   private movesPillGfx!: Phaser.GameObjects.Graphics;
   private displayedScore: number = 0;
   private scoreCounterTimer: Phaser.Time.TimerEvent | null = null;
+  private spriteScore?: SpriteNumber;
   private boardGlowGfx!: Phaser.GameObjects.Graphics;
 
   // ── Booster tray elements ──
@@ -150,6 +158,9 @@ export class GameplayScene extends Phaser.Scene {
   // ── Progress bar elements ──
   private progressBarGfx!: Phaser.GameObjects.Graphics;
   private progressBarBgGfx!: Phaser.GameObjects.Graphics;
+  private progressBarEmptyImg?: Phaser.GameObjects.Image;
+  private progressBarFullImg?: Phaser.GameObjects.Image;
+  private usingSpriteProgress: boolean = false;
   private progressBarX: number = 0;
   private progressBarY: number = 0;
   private progressBarWidth: number = 0;
@@ -291,12 +302,26 @@ export class GameplayScene extends Phaser.Scene {
       this.boardX = Math.round(centerX - boardWidth / 2);
       this.boardY = GAMEPLAY_BOARD_Y;
 
+      // Board frame sprite (rendered behind everything)
+      if (this.textures.exists(ASSET_KEY_FRAME_BOARD)) {
+        const framePad = 8; // padding around board
+        const frame = this.add.image(
+          this.boardX + boardWidth / 2,
+          this.boardY + boardHeight / 2,
+          ASSET_KEY_FRAME_BOARD,
+        );
+        frame.setDisplaySize(boardWidth + framePad * 2, boardHeight + framePad * 2);
+        frame.setDepth(Z_BOARD);
+      }
+
       // Board glow border
       this.boardGlowGfx = this.add.graphics();
+      this.boardGlowGfx.setDepth(Z_BOARD + 1);
       this.drawBoardGlow(this.boardX, this.boardY, boardWidth, boardHeight);
 
       // Board background with gradient
       this.boardGfx = this.add.graphics();
+      this.boardGfx.setDepth(Z_BOARD + 2);
       this.drawBoardBackground(this.boardX, this.boardY, boardWidth, boardHeight);
 
       // Cell outlines
@@ -395,6 +420,7 @@ export class GameplayScene extends Phaser.Scene {
       gemData.specialType,
     );
     gem.setPosition(x, y);
+    gem.setDepth(Z_GEMS);
     this.add.existing(gem as unknown as Phaser.GameObjects.GameObject);
     this.gemSprites.set(gemData.id, gem);
     return gem;
@@ -1002,6 +1028,7 @@ export class GameplayScene extends Phaser.Scene {
         const eased = 1 - Math.pow(1 - t, 3);
         this.displayedScore = Math.round(start + diff * eased);
         this.scoreText.setText(this.displayedScore.toLocaleString());
+        if (this.spriteScore) this.spriteScore.setValue(this.displayedScore);
       },
     });
   }
@@ -1029,12 +1056,24 @@ export class GameplayScene extends Phaser.Scene {
     const starIconCY = rowCenterY;
     this.drawMiniStar(this.scorePillGfx, starIconCX, starIconCY, 6, true);
 
+    // Use sprite digits for score if available
+    const hasDigits = this.textures.exists(DIGIT_TEXTURE_KEYS[0]);
+    if (hasDigits) {
+      this.spriteScore = new SpriteNumber(this, {
+        x: Math.round(scorePillX + 24),
+        y: rowCenterY,
+        digitHeight: 14,
+        align: 'left',
+        value: 0,
+      });
+    }
     this.scoreText = this.add.text(Math.round(scorePillX + 24), rowCenterY, '0', {
       fontFamily: FONT_FAMILY,
       fontSize: '14px',
       color: '#FFFFFF',
       fontStyle: 'bold',
     }).setOrigin(0, 0.5);
+    if (hasDigits) this.scoreText.setVisible(false);
 
     // ── Moves pill (right side) ──
     const movesPillW = 80;
@@ -1178,13 +1217,39 @@ export class GameplayScene extends Phaser.Scene {
       barX, barY, barW, barH, threeStarMax,
     });
 
-    // Background track (dark, rounded)
-    this.progressBarBgGfx = this.add.graphics();
-    this.progressBarBgGfx.fillStyle(0x333344, 1);
-    this.progressBarBgGfx.fillRoundedRect(barX, barY, barW, barH, 8);
+    // Use sprite-based progress bar if assets available
+    const hasSpriteBar = this.textures.exists(ASSET_KEY_PROGRESS_EMPTY) &&
+                         this.textures.exists(ASSET_KEY_PROGRESS_FULL);
 
-    // Fill layer (drawn on top, updated each frame)
-    this.progressBarGfx = this.add.graphics();
+    if (hasSpriteBar) {
+      this.usingSpriteProgress = true;
+
+      // Empty bar background — force both width AND height to match the bar dimensions
+      this.progressBarEmptyImg = this.add.image(barX + barW / 2, barY + barH / 2, ASSET_KEY_PROGRESS_EMPTY);
+      this.progressBarEmptyImg.setDisplaySize(barW, barH);
+      this.progressBarEmptyImg.setDepth(5);
+
+      // Full bar overlay — same display size so they align perfectly
+      this.progressBarFullImg = this.add.image(barX + barW / 2, barY + barH / 2, ASSET_KEY_PROGRESS_FULL);
+      this.progressBarFullImg.setDisplaySize(barW, barH);
+      this.progressBarFullImg.setDepth(6);
+      // Start with 0 progress — crop to 0 width
+      this.progressBarFullImg.setCrop(0, 0, 0, this.progressBarFullImg.height);
+
+      // Placeholder graphics (hidden but needed so other code doesn't crash)
+      this.progressBarBgGfx = this.add.graphics();
+      this.progressBarGfx = this.add.graphics();
+    } else {
+      this.usingSpriteProgress = false;
+
+      // Background track (dark, rounded)
+      this.progressBarBgGfx = this.add.graphics();
+      this.progressBarBgGfx.fillStyle(0x333344, 1);
+      this.progressBarBgGfx.fillRoundedRect(barX, barY, barW, barH, 8);
+
+      // Fill layer (drawn on top, updated each frame)
+      this.progressBarGfx = this.add.graphics();
+    }
 
     // Star markers at proportional positions
     this.starMarkerXPositions = [];
@@ -1220,6 +1285,13 @@ export class GameplayScene extends Phaser.Scene {
 
     // Fill ratio capped at 100%
     const fillRatio = Math.min(score / threeStarMax, 1);
+
+    if (this.usingSpriteProgress && this.progressBarFullImg) {
+      // Sprite-based: crop the full bar image to show progress
+      const cropW = Math.round(fillRatio * this.progressBarFullImg.width);
+      this.progressBarFullImg.setCrop(0, 0, cropW, this.progressBarFullImg.height);
+      return;
+    }
 
     const barX = this.progressBarX;
     const barY = this.progressBarY;
@@ -1840,7 +1912,7 @@ export class GameplayScene extends Phaser.Scene {
       const booster = boosters[i];
       if (booster.key !== 'moves3' && this.textures.exists(booster.key)) {
         const icon = this.add.image(slotCX, slotCY - 2, booster.key);
-        icon.setDisplaySize(24, 24);
+        icon.setDisplaySize(32, 32);
       } else {
         // Fallback: text icon
         this.add.text(slotCX, slotCY - 2, booster.label, {

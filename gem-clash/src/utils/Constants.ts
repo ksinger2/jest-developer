@@ -332,10 +332,10 @@ export const GAMEPLAY_BOOSTER_Y = 480;
 export const GAMEPLAY_HEADER_FONT_SIZE = 20;
 
 /** Height of compact pills used in gameplay HUD */
-export const GAMEPLAY_COMPACT_PILL_HEIGHT = 18;
+export const GAMEPLAY_COMPACT_PILL_HEIGHT = 24;
 
 /** Border radius for compact pills */
-export const GAMEPLAY_COMPACT_PILL_RADIUS = 9;
+export const GAMEPLAY_COMPACT_PILL_RADIUS = 12;
 
 // ============================================================
 // SHOP LAYOUT CONSTANTS
@@ -395,10 +395,10 @@ export const BOOSTER_SLOT_SIZE = 48;
 export const BOOSTER_SLOT_GAP = 16;
 
 /** Radius of the booster count badge */
-export const BOOSTER_COUNT_BADGE_RADIUS = 8;
+export const BOOSTER_COUNT_BADGE_RADIUS = 10;
 
 /** Font size for the booster count number */
-export const BOOSTER_COUNT_FONT_SIZE = 10;
+export const BOOSTER_COUNT_FONT_SIZE = 13;
 
 // ============================================================
 // MOVES WARNING COLOR THRESHOLDS
@@ -452,6 +452,41 @@ export const ASSET_KEY_BG_MENU = 'bg_menu';
 export const ASSET_KEY_BG_SHOP = 'bg_shop';
 /** Background image for level select scene */
 export const ASSET_KEY_BG_LEVEL_SELECT = 'bg_level_select';
+
+// ============================================================
+// UI SPRITE ASSET KEYS (promoted from extras)
+// ============================================================
+
+/** Play button green sprite */
+export const ASSET_KEY_BTN_PLAY_GREEN = 'btn_play_green';
+/** Arrow right icon (next buttons) */
+export const ASSET_KEY_ARROW_RIGHT = 'icon_arrow_right';
+/** Arrow left icon (back buttons) */
+export const ASSET_KEY_ARROW_LEFT = 'icon_arrow_left';
+/** Settings gear icon */
+export const ASSET_KEY_SETTINGS = 'icon_settings';
+/** Level select header sprite */
+export const ASSET_KEY_HEADER_LEVEL = 'header_level';
+/** Shop header sprite */
+export const ASSET_KEY_HEADER_SHOP = 'header_shop';
+/** Progress bar empty (background track) */
+export const ASSET_KEY_PROGRESS_EMPTY = 'progress_bar_empty';
+/** Progress bar full (fill overlay) */
+export const ASSET_KEY_PROGRESS_FULL = 'progress_bar_full';
+/** Green banner (fallback button background) */
+export const ASSET_KEY_BANNER_GREEN = 'banner_green';
+/** Level complete celebration sprite */
+export const ASSET_KEY_LEVEL_COMPLETE = 'level_complete';
+
+// ============================================================
+// DIGIT SPRITE ASSET KEYS
+// ============================================================
+
+/** Digit sprite keys for number rendering (0-9) */
+export const DIGIT_TEXTURE_KEYS: string[] = [
+  'digit_0', 'digit_1', 'digit_2', 'digit_3', 'digit_4',
+  'digit_5', 'digit_6', 'digit_7', 'digit_8', 'digit_9',
+];
 
 // ============================================================
 // FRAME ASSET KEYS
