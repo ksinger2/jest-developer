@@ -12,6 +12,7 @@ import { Logger } from '../../utils/Logger';
 import { GlButton, GlHUD, GlModal } from '../../ui/UIComponents';
 import { OfferManager } from '../systems/OfferManager';
 import { fadeIn, fadeTransition } from '../../ui/Transitions';
+import { AnalyticsManager } from '../../analytics/AnalyticsManager';
 import {
   SCENE_MAIN_MENU,
   SCENE_LEVEL_SELECT,
@@ -98,6 +99,9 @@ export class MainMenuScene extends Phaser.Scene {
   private offerTimerEvent?: Phaser.Time.TimerEvent;
   private bannerContainer?: Phaser.GameObjects.Container;
 
+  /** Guard flag to prevent session_started from firing multiple times */
+  private static sessionStartedFired = false;
+
   constructor() {
     super({ key: SCENE_MAIN_MENU });
   }
@@ -129,7 +133,55 @@ export class MainMenuScene extends Phaser.Scene {
 
     this.startRegenTimer();
 
+    // Fire session_started analytics (once per session)
+    this.fireSessionStartedAnalytics();
+
     log.info('create', 'Main menu ready', { level: this.progress.currentLevel, lives: this.progress.lives });
+  }
+
+  /**
+   * Fire session_started analytics event.
+   * Uses a static flag to ensure it only fires once per session.
+   */
+  private fireSessionStartedAnalytics(): void {
+    if (MainMenuScene.sessionStartedFired) {
+      log.debug('fireSessionStartedAnalytics', 'session_started already fired this session, skipping');
+      return;
+    }
+
+    MainMenuScene.sessionStartedFired = true;
+
+    const isReturning = this.progress.currentLevel > 1 || this.progress.totalStars > 0;
+
+    // Calculate days since last session if we have lastLifeLostAt (approximate session tracking)
+    let daysSinceLastSession: number | undefined;
+    if (this.progress.lastLifeLostAt) {
+      const lastSessionTime = new Date(this.progress.lastLifeLostAt).getTime();
+      const now = Date.now();
+      const daysDiff = Math.floor((now - lastSessionTime) / (1000 * 60 * 60 * 24));
+      if (daysDiff > 0) {
+        daysSinceLastSession = daysDiff;
+      }
+    }
+
+    const analytics = AnalyticsManager.getInstance();
+    analytics.trackSessionStarted({
+      is_returning: isReturning,
+      current_level: this.progress.currentLevel,
+      total_stars: this.progress.totalStars,
+      lives_remaining: this.progress.lives,
+      days_since_last_session: daysSinceLastSession,
+      has_incomplete_level: false, // Phase 1: no incomplete level tracking
+    }).catch((err) => {
+      log.error('fireSessionStartedAnalytics', 'Failed to fire session_started', err);
+    });
+
+    log.info('fireSessionStartedAnalytics', 'session_started analytics event fired', {
+      is_returning: isReturning,
+      current_level: this.progress.currentLevel,
+      total_stars: this.progress.totalStars,
+      lives_remaining: this.progress.lives,
+    });
   }
 
   // -- Background (depth 0) ---------------------------------------------------

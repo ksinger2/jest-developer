@@ -75,11 +75,14 @@ export class PlayerDataManager {
   /**
    * Save the player's progress to Jest playerData.
    * Validates the data and checks storage size before writing.
+   *
+   * @param flush - If true, immediately flush data to server (for critical saves)
    */
-  async saveProgress(progress: PlayerProgress): Promise<void> {
+  async saveProgress(progress: PlayerProgress, flush = false): Promise<void> {
     this.logger.debug('saveProgress', 'Saving player progress', {
       currentLevel: progress.currentLevel,
       totalStars: progress.totalStars,
+      flush,
     });
 
     try {
@@ -105,9 +108,24 @@ export class PlayerDataManager {
       this.logger.info('saveProgress', 'Player progress saved successfully', {
         sizeBytes,
       });
+
+      // Flush to server if requested (for critical saves like level complete, purchases)
+      if (flush) {
+        await this.sdk.flushPlayerData();
+        this.logger.info('saveProgress', 'Player data flushed to server');
+      }
     } catch (err) {
       this.logger.error('saveProgress', 'Failed to save player progress', err);
     }
+  }
+
+  /**
+   * Flush any pending player data changes to the server immediately.
+   * Call this on app pause/exit or after critical saves.
+   */
+  async flush(): Promise<void> {
+    this.logger.debug('flush', 'Flushing player data to server');
+    await this.sdk.flushPlayerData();
   }
 
   /**

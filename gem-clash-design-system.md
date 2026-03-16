@@ -1,4 +1,4 @@
-# Gem Clash Design System
+# Gem Link Design System
 
 > **Owner:** Lead Designer
 > **Status:** Active -- Single Source of Truth
@@ -13,10 +13,10 @@
 
 ### 1.1 Brand Identity
 
-- **Brand Name:** Gem Clash
+- **Brand Name:** Gem Link
 - **Tagline:** "Challenge friends in match-3 puzzles!"
 - **Brand Personality:** Vibrant, competitive, social, casual-friendly
-- **Logo Concept:** A cluster of 3 colorful gem shapes (diamond, hexagon, circle) with a lightning-bolt "clash" element cutting diagonally through them. The word "GEM" sits above "CLASH" in bold block lettering with a slight perspective tilt. The gems use the primary gem palette (red, blue, green). The lightning bolt uses the accent color (#00FF88).
+- **Logo Concept:** A cluster of 3 colorful gem shapes (diamond, hexagon, circle) with connecting lines forming a network pattern between them. The word "GEM" sits above "LINK" in bold block lettering with a slight perspective tilt. The gems use the primary gem palette (red, blue, green). The connecting lines use the accent color (#00FF88).
 
 ### 1.2 Tone of Voice
 
@@ -627,7 +627,7 @@ Platform-mandated footer visible at bottom of all screens.
 **Background:** Solid `#0A0A1A`
 
 **Layout (centered vertically and horizontally):**
-1. Gem Clash logo (gem cluster + text), approximately 180px wide
+1. Gem Link logo (gem cluster + text), approximately 180px wide
 2. Spacing: 32px below logo
 3. ProgressBar (large, 12px height), width 200px, centered
 4. Spacing: 12px below bar
@@ -756,9 +756,9 @@ Platform-mandated footer visible at bottom of all screens.
 
 **Phase 1 Products (in display order):**
 
-1. **Starter Pack** (featured): gc_starter_pack, "5 boosters + 50 coins", 2 Tokens, BEST VALUE badge
-2. **3 Extra Moves:** gc_moves_3, "Keep playing when you're so close!", 1 Token
-3. **Refill Lives:** gc_lives_refill, "Get 5 lives instantly", 1 Token
+1. **Starter Pack** (featured): gl_starter_pack, "5 boosters + 50 coins", 2 Tokens, BEST VALUE badge
+2. **3 Extra Moves:** gl_moves_3, "Keep playing when you're so close!", 1 Token
+3. **Refill Lives:** gl_lives_refill, "Get 5 lives instantly", 1 Token
 
 **Guest state:** All price buttons replaced with "Register" in `#888888` text, disabled styling. Tapping any triggers registration prompt.
 
@@ -1084,4 +1084,4 @@ All assets are bundled in the build. No external CDN. Budget: under 10MB total c
 
 ---
 
-*This document is the single source of truth for all visual design decisions in Gem Clash. Engineers should reference this document for every pixel value, color code, timing, and component specification. If a design question is not answered here, escalate to the Lead Designer before making assumptions.*
+*This document is the single source of truth for all visual design decisions in Gem Link. Engineers should reference this document for every pixel value, color code, timing, and component specification. If a design question is not answered here, escalate to the Lead Designer before making assumptions.*

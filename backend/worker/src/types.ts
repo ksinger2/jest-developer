@@ -1,5 +1,5 @@
 /**
- * Gem Clash - JWT Purchase Verification Types
+ * Gem Link - JWT Purchase Verification Types
  *
  * Type definitions for the Jest platform payment verification flow.
  */
@@ -60,9 +60,9 @@ export interface RateLimitEntry {
 // -- Allowed SKUs --
 
 export const ALLOWED_SKUS: ReadonlySet<string> = new Set([
-  "gc_moves_3",
-  "gc_starter_pack",
-  "gc_lives_refill",
+  "gl_moves_3",
+  "gl_starter_pack",
+  "gl_lives_refill",
 ]);
 
 // -- Constants --

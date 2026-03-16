@@ -424,6 +424,7 @@ export enum GameEvent {
 
   // Purchase
   PURCHASE_STARTED = 'purchase_started',
+  PURCHASE_GRANT_ITEM = 'purchase_grant_item',
   PURCHASE_COMPLETED = 'purchase_completed',
   PURCHASE_FAILED = 'purchase_failed',
   PURCHASE_CANCELLED = 'purchase_cancelled',

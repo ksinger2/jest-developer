@@ -86,13 +86,13 @@ export class LevelCompleteScene extends Phaser.Scene {
     });
   }
 
-  create(): void {
+  async create(): Promise<void> {
     log.info('create', 'Building level complete UI');
 
     fadeIn(this);
 
     if (this.result.passed) {
-      this.updatePlayerProgress();
+      await this.updatePlayerProgress();
     }
 
     this.buildHUD();
@@ -120,7 +120,7 @@ export class LevelCompleteScene extends Phaser.Scene {
     log.info('create', 'LevelCompleteScene ready');
   }
 
-  private updatePlayerProgress(): void {
+  private async updatePlayerProgress(): Promise<void> {
     log.info('updatePlayerProgress', 'Persisting progress', {
       levelId: this.result.levelId,
       stars: this.result.stars,
@@ -145,10 +145,11 @@ export class LevelCompleteScene extends Phaser.Scene {
 
       setPlayerProgress(this.registry, progress);
 
+      // Save progress with flush=true for critical level complete data
       const pdm = new PlayerDataManager();
-      pdm.saveProgress(progress);
+      await pdm.saveProgress(progress, true);
 
-      log.info('updatePlayerProgress', 'Progress saved', {
+      log.info('updatePlayerProgress', 'Progress saved and flushed', {
         currentLevel: progress.currentLevel,
         totalStars: progress.totalStars,
       });

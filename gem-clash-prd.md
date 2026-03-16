@@ -1,4 +1,4 @@
-# Product Requirements Document: Gem Clash
+# Product Requirements Document: Gem Link
 
 > **Author:** Principal Product Manager
 > **Status:** Draft — Blockers Resolved, Ready for Development
@@ -11,7 +11,7 @@
 
 ## 1. Executive Summary
 
-Gem Clash is a **social match-3 puzzle game with asynchronous PvP**, built for the Jest platform. Players complete move-limited levels, earn stars, and challenge friends to beat their scores via SMS/RCS messaging — leveraging Jest's unique messaging-native DNA as a core gameplay loop rather than a bolted-on feature.
+Gem Link is a **social match-3 puzzle game with asynchronous PvP**, built for the Jest platform. Players complete move-limited levels, earn stars, and challenge friends to beat their scores via SMS/RCS messaging — leveraging Jest's unique messaging-native DNA as a core gameplay loop rather than a bolted-on feature.
 
 **Why this game, why now, why Jest:**
 - **Market proof:** Match-3 is the most proven casual genre globally (Royal Match $2B+, Candy Crush $20B+, Match Masters $100M+/year PvP model)
@@ -28,7 +28,7 @@ Gem Clash is a **social match-3 puzzle game with asynchronous PvP**, built for t
 
 ### 2.1 Vision Statement
 
-> When players want a quick competitive break during a messaging session, Gem Clash gives them a 3-minute match-3 challenge they can share with friends — turning every completed level into a social moment that arrives in someone's inbox.
+> When players want a quick competitive break during a messaging session, Gem Link gives them a 3-minute match-3 challenge they can share with friends — turning every completed level into a social moment that arrives in someone's inbox.
 
 ### 2.2 Why Match-3
 
@@ -40,7 +40,7 @@ Match-3 is the single most commercially successful casual game genre:
 
 ### 2.3 Why Jest
 
-| Jest Advantage | Impact on Gem Clash |
+| Jest Advantage | Impact on Gem Link |
 |---|---|
 | **90/10 revenue split** | $0.90 kept per $1 (vs $0.70 on App Store) — 29% more revenue |
 | **3-4x retention** via SMS/RCS | Messaging inbox is the stickiest re-engagement surface |
@@ -57,7 +57,7 @@ DoonDook publishes 16 of the 29 games — all simple, single-mechanic titles wit
 
 ### 2.5 Strategic Alignment
 
-Gem Clash is the studio's **first title**. It is designed to:
+Gem Link is the studio's **first title**. It is designed to:
 1. Validate the 22-agent team's ability to ship on Jest
 2. Build reusable infrastructure (SDK wrapper, CI/CD, analytics) for future titles
 3. Generate D7 retention data for Jest Games Fund application ($200K)
@@ -183,9 +183,9 @@ Gem Clash is the studio's **first title**. It is designed to:
 
 | SKU | Name | Price | Description | Trigger |
 |---|---|---|---|---|
-| `gc_moves_3` | 3 Extra Moves | 1 Token ($1) | Add 3 moves to current level | "Out of moves" overlay |
-| `gc_starter_pack` | Starter Pack | 2 Tokens ($2) | 5 boosters + 50 coins | Shop + post-Level 5 one-time offer |
-| `gc_lives_refill` | Refill Lives | 1 Token ($1) | Restore all 5 lives | 0 lives remaining + shop |
+| `gl_moves_3` | 3 Extra Moves | 1 Token ($1) | Add 3 moves to current level | "Out of moves" overlay |
+| `gl_starter_pack` | Starter Pack | 2 Tokens ($2) | 5 boosters + 50 coins | Shop + post-Level 5 one-time offer |
+| `gl_lives_refill` | Refill Lives | 1 Token ($1) | Restore all 5 lives | 0 lives remaining + shop |
 
 **Purchase flow implementation:**
 1. Display product via `getProducts()` (cache products, refresh on shop open)
@@ -370,8 +370,8 @@ Unresolved technical decisions the engineering team must make. Each is flagged w
 | # | Decision | Resolution | Rationale | Risks Accepted |
 |---|---|---|---|---|
 | E-1 | **Game engine** | **Phaser 3 (Custom Build)** — exclude physics, 3D, FB Instant Games plugin. Target ~700KB-1MB engine bundle. CI/CD alarm at 8MB total build. Custom build configured from Day 1. | Built-in scene management, input, tween/animation saves 1-2 weeks vs PixiJS. Match-3 tutorials/examples accelerate development. Tree-shaking mitigated by custom build. | Larger bundle than PixiJS (~200KB more); Phaser 4 migration irrelevant for our timeline |
-| E-2 | **Game slug** | **`gem-clash`** — lowercase, hyphenated, matches Jest conventions. Prereq: Compliance Officer trademark check before Developer Console registration. | Matches game name exactly. Verified unique against all 29 Jest games. Shortest viable option. Hyphenated for readability/SEO. | Permanent URL if game rebrands (low risk — match-3 games rarely rebrand; display name can change; users reach via SMS deep links) |
-| E-3 | **SKU naming** | **`gc_{descriptive_name}`** in snake_case. Phase 1 SKUs: `gc_moves_3`, `gc_starter_pack`, `gc_lives_refill`. Future: `gc_season_s1`, `gc_gift_booster`, `gc_moves_5`. Document convention before first SKU creation. | 2-letter game prefix namespaces for portfolio. Descriptive names are self-documenting. Quantity suffix (`_3`, `_5`) distinguishes variants. No over-engineering for 3 initial products. | No category prefix — manageable at <20 products/game |
+| E-2 | **Game slug** | **`gem-link`** — lowercase, hyphenated, matches Jest conventions. Prereq: Compliance Officer trademark check before Developer Console registration. | Matches game name exactly. Verified unique against all 29 Jest games. Shortest viable option. Hyphenated for readability/SEO. | Permanent URL if game rebrands (low risk — match-3 games rarely rebrand; display name can change; users reach via SMS deep links) |
+| E-3 | **SKU naming** | **`gl_{descriptive_name}`** in snake_case. Phase 1 SKUs: `gl_moves_3`, `gl_starter_pack`, `gl_lives_refill`. Future: `gl_season_s1`, `gl_gift_booster`, `gl_moves_5`. Document convention before first SKU creation. | 2-letter game prefix namespaces for portfolio. Descriptive names are self-documenting. Quantity suffix (`_3`, `_5`) distinguishes variants. No over-engineering for 3 initial products. | No category prefix — manageable at <20 products/game |
 | E-4 | **Backend for Phase 1** | **Two-track approach.** Track A (default): Client-only with hardened client-side validation. Track B (Week 1 spike): Test `fetch()` to external API from Jest webview. If external calls work → Cloudflare Worker JWT verification endpoint by end of Week 1. If blocked → client-only accepted, backend deferred to Phase 2. `getIncompletePurchases()` recovery is mandatory regardless. | Unblocks development immediately while testing the assumption. Cloudflare Worker = serverless, free tier, ~30 lines, 2-3 day implementation. Client hardening is valuable regardless. | If client-only: trivially spoofable purchases (low practical risk at 15 paying users/month). Track B spike owned by DevOps + Frontend Lead. |
 
 #### E-4 Spike Findings: External API Access from Jest Webview
@@ -417,7 +417,7 @@ The engineering team conducted a thorough review of all 25 Jest platform docs. K
 
 - **Decision:** Which products launch in Phase 1 vs. Phase 2 vs. Phase 3? Strategy assessment proposes 6 products total.
 - **Phase 1 recommendation:** 3 products (Extra Moves $1, Starter Pack $2, Lives Refill $1) — validate purchase flow and conversion before expanding catalog
-- **SKU naming:** ✅ Resolved. Convention: `gc_{descriptive_name}`. Phase 1 SKUs: `gc_moves_3`, `gc_starter_pack`, `gc_lives_refill`
+- **SKU naming:** ✅ Resolved. Convention: `gl_{descriptive_name}`. Phase 1 SKUs: `gl_moves_3`, `gl_starter_pack`, `gl_lives_refill`
 - **Open question:** Does 1 Token = $1 transparent pricing help or hurt conversion? No benchmark data exists on Jest. Must validate post-launch.
 
 ### 9.2 Revenue Projection Validation
@@ -566,10 +566,10 @@ If accepted into Jest Games Fund, the Jest team will help design this flow.
 
 | # | Question | Resolution | Date |
 |---|---|---|---|
-| C-1 | **Game slug selection** | `gem-clash` — pending Compliance Officer trademark check | Feb 2026 |
+| C-1 | **Game slug selection** | `gem-link` — pending Compliance Officer trademark check | Feb 2026 |
 | C-2 | **Tech stack confirmation** | Phaser 3 (Custom Build) confirmed | Feb 2026 |
 | C-3 | **Backend for Phase 1?** | Two-track: client-only default + Week 1 spike to test external API access | Feb 2026 |
-| C-4 | **Product SKU naming convention** | `gc_{descriptive_name}` — documented convention | Feb 2026 |
+| C-4 | **Product SKU naming convention** | `gl_{descriptive_name}` — documented convention | Feb 2026 |
 
 ### High-Priority Unknowns
 
@@ -640,8 +640,8 @@ If accepted into Jest Games Fund, the Jest team will help design this flow.
 ```
 Week 1:
   [RESOLVED] E-1: Phaser 3 Custom Build ─┐
-  [RESOLVED] E-2: Slug = gem-clash       ─┤
-  [RESOLVED] E-3: SKUs = gc_* convention ─┼──→ Developer Console setup
+  [RESOLVED] E-2: Slug = gem-link        ─┤
+  [RESOLVED] E-3: SKUs = gl_* convention ─┼──→ Developer Console setup
   [RESOLVED] E-4: Two-track approach     ─┘
 
   Lead Designer: Begin D-1 through D-5 (design system, gems, menu)
@@ -649,7 +649,7 @@ Week 1:
   Frontend Lead: Phaser project scaffold + SDK wrapper (E-10)
   DevOps: CI/CD pipeline setup + Track B spike (test external API from Jest)
   Backend Lead: If Track B succeeds → Cloudflare Worker JWT verification (2-3 days)
-  Compliance Officer: Trademark check on "Gem Clash" before slug registration
+  Compliance Officer: Trademark check on "Gem Link" before slug registration
 
 Week 2:
   Game Engineer: Match-3 engine core (grid, matching, cascades)

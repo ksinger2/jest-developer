@@ -1,4 +1,4 @@
-# Gem Clash: Level Design Document
+# Gem Link: Level Design Document
 
 > **Author:** Level Designer
 > **Status:** Complete -- Ready for Engineering
@@ -342,7 +342,7 @@ A player making ~20 basic matches with no specials and no cascades scores roughl
 
 ---
 
-#### Level 10 -- "Crystal Clash" (BOSS)
+#### Level 10 -- "Crystal Link" (BOSS)
 
 | Property | Value |
 |----------|-------|
@@ -694,7 +694,7 @@ A player making ~20 basic matches with no specials and no cascades scores roughl
 
 ---
 
-#### Level 30 -- "Final Clash" (FINAL BOSS)
+#### Level 30 -- "Final Link" (FINAL BOSS)
 
 | Property | Value |
 |----------|-------|
@@ -705,7 +705,7 @@ A player making ~20 basic matches with no specials and no cascades scores roughl
 | Objective | Score 8,000 |
 | Seed | `level_030_v1` |
 
-**Design Notes:** The final level of Phase 1. Named to match the game title. 12 moves, 6 colors, 8,000-point threshold. This is the hardest level in the game. The 3-star threshold (27,000) is designed to be a trophy -- only players with deep pattern recognition, special-gem expertise, and some board luck will achieve it. Target first-attempt pass rate: 35%. Target 3-star rate: <5%. Completing this level should feel like an event. The PvP challenge system (Phase 2) will make "Beat my score on Level 30" the ultimate bragging-rights moment.
+**Design Notes:** The final level of Phase 1. Named to match the game title. **NOTE:** The move limits and star thresholds in this design document have been superseded by the implementation values in `gem-clash/assets/levels/levels.json`. The implementation uses tighter constraints (18-7 moves instead of 25-12 moves) which have been accepted as the authoritative values after user decision to resolve the design-vs-implementation discrepancy. 12 moves, 6 colors, 8,000-point threshold. This is the hardest level in the game. The 3-star threshold (27,000) is designed to be a trophy -- only players with deep pattern recognition, special-gem expertise, and some board luck will achieve it. Target first-attempt pass rate: 35%. Target 3-star rate: <5%. Completing this level should feel like an event. The PvP challenge system (Phase 2) will make "Beat my score on Level 30" the ultimate bragging-rights moment.
 
 ---
 
@@ -797,7 +797,7 @@ This file is the single source of truth consumed by the Game Engineer's level lo
 | 7 | Sparkling Stream | 22 | 1,400 | 3,500 | 6,000 | 5 | Line Clear | BREATHER |
 | 8 | Blast Zone | 20 | 1,800 | 4,500 | 7,500 | 5 | Line Clear, Bomb | Intro: bomb |
 | 9 | Double Trouble | 19 | 2,000 | 5,000 | 8,500 | 5 | Line Clear, Bomb | Combined specials |
-| 10 | Crystal Clash | 18 | 2,500 | 6,000 | 10,000 | 5 | Line Clear, Bomb | BOSS: Zone 2 |
+| 10 | Crystal Link | 18 | 2,500 | 6,000 | 10,000 | 5 | Line Clear, Bomb | BOSS: Zone 2 |
 | 11 | Prismatic Burst | 20 | 2,800 | 6,500 | 11,000 | 5 | All Three | Intro: color bomb |
 | 12 | Rainbow Road | 19 | 3,000 | 7,000 | 12,000 | 5 | All Three | Reinforce: color bomb |
 | 13 | Gentle Glow | 20 | 2,800 | 6,800 | 11,500 | 5 | All Three | BREATHER |
@@ -817,7 +817,7 @@ This file is the single source of truth consumed by the Game Engineer's level lo
 | 27 | Oasis | 16 | 6,000 | 13,000 | 21,000 | 6 | All Three | BREATHER |
 | 28 | Crimson Peak | 13 | 7,000 | 15,000 | 24,000 | 6 | All Three | Peak IAP conversion |
 | 29 | Abyssal Depths | 12 | 7,500 | 16,000 | 25,000 | 6 | All Three | Penultimate |
-| 30 | Final Clash | 12 | 8,000 | 17,000 | 27,000 | 6 | All Three | FINAL BOSS |
+| 30 | Final Link | 12 | 8,000 | 17,000 | 27,000 | 6 | All Three | FINAL BOSS |
 
 ---
 

@@ -80,6 +80,7 @@ import {
   GameEvent,
   REMAP_MAX_PER_ATTEMPT,
   ProductSKU,
+  PlayerProgress,
 } from '../../types/game.types';
 import { getPlayerProgress, setPlayerProgress } from '../../utils/RegistryHelper';
 import { PlayerDataManager } from '../../sdk/PlayerDataManager';
@@ -90,8 +91,10 @@ import { findAllMatches, hasValidMoves, wouldSwapCreateMatch, getSpecialGemAffec
 import { ScoreSystem } from '../systems/ScoreSystem';
 import { LevelManager, RawLevelData } from '../systems/LevelManager';
 import { InputHandler } from '../systems/InputHandler';
+import { LivesSystem } from '../systems/LivesSystem';
 import { CelebrationSystem } from '../../ui/CelebrationSystem';
 import { GlModal, GlButton } from '../../ui/UIComponents';
+import { AnalyticsManager } from '../../analytics/AnalyticsManager';
 
 /** Convert a numeric color to a hex string */
 const colorHex = (c: number): string => `#${c.toString(16).padStart(6, '0')}`;
@@ -377,9 +380,59 @@ export class GameplayScene extends Phaser.Scene {
         specialGems: levelData.specialGemUnlocks,
       });
 
+      // ── ANALYTICS: level_started ──
+      this.fireLevelStartedAnalytics(levelData, progress);
+
     } catch (err: unknown) {
       this.logger.error('create', 'Error during GameplayScene create', err);
     }
+  }
+
+  /**
+   * Fire level_started analytics event.
+   * Called after board initialization is complete and before player can make their first move.
+   */
+  private fireLevelStartedAnalytics(levelData: RawLevelData, progress: PlayerProgress): void {
+    // Determine difficulty based on level data
+    // Phase 1: derive from level id (1-10 = easy, 11-20 = medium, 21-30 = hard)
+    let difficulty = 'easy';
+    if (this.levelId > 20) {
+      difficulty = 'hard';
+    } else if (this.levelId > 10) {
+      difficulty = 'medium';
+    }
+
+    // Get previous best stars for this level
+    const levelKey = String(this.levelId);
+    const previousBestStars = progress.stars[levelKey] ?? 0;
+
+    // Build special gems enabled string
+    const specialGemsEnabled = levelData.specialGemUnlocks?.join(',') || '';
+
+    // Calculate attempt number (Phase 1: use simple heuristic based on if level was attempted before)
+    // TODO: Track attempt_number properly in PlayerProgress
+    const attemptNumber = previousBestStars > 0 ? 2 : 1;
+
+    const analytics = AnalyticsManager.getInstance();
+    analytics.trackLevelStarted({
+      level_id: this.levelId,
+      moves_available: levelData.moveLimit,
+      difficulty,
+      gem_colors: levelData.colorCount,
+      attempt_number: attemptNumber,
+      special_gems_enabled: specialGemsEnabled || undefined,
+      previous_best_stars: previousBestStars,
+      lives_before_start: progress.lives,
+    }).catch((err) => {
+      this.logger.error('fireLevelStartedAnalytics', 'Failed to fire level_started', err);
+    });
+
+    this.logger.info('fireLevelStartedAnalytics', 'level_started analytics event fired', {
+      level_id: this.levelId,
+      moves_available: levelData.moveLimit,
+      difficulty,
+      gem_colors: levelData.colorCount,
+    });
   }
 
   update(): void {
@@ -910,6 +963,13 @@ export class GameplayScene extends Phaser.Scene {
       result,
     );
 
+    // Fire analytics event BEFORE scene transition
+    if (result.passed) {
+      this.fireLevelCompletedAnalytics(result);
+    } else {
+      this.fireLevelFailedAnalytics(result);
+    }
+
     if (result.passed) {
       // Pass → go straight to LevelCompleteScene
       this.time.delayedCall(800, () => {
@@ -924,6 +984,69 @@ export class GameplayScene extends Phaser.Scene {
         this.showFailModal(result);
       });
     }
+  }
+
+  /**
+   * Fire level_completed analytics event.
+   * Called when player wins the level (score >= 1-star threshold).
+   */
+  private fireLevelCompletedAnalytics(result: LevelResult): void {
+    const analytics = AnalyticsManager.getInstance();
+
+    analytics.trackLevelCompleted({
+      level_id: result.levelId,
+      score: result.score,
+      stars: result.stars,
+      moves_used: result.movesUsed,
+      moves_remaining: result.movesRemaining,
+      duration_seconds: result.durationSeconds,
+      cascades: result.totalCascades,
+      // TODO: Track specials_created, specials_activated, best_combo in ScoreSystem
+      purchased_extra_moves: false, // TODO: Track if extra moves were purchased this attempt
+    }).catch((err) => {
+      this.logger.error('fireLevelCompletedAnalytics', 'Failed to fire level_completed', err);
+    });
+
+    this.logger.info('fireLevelCompletedAnalytics', 'level_completed analytics event fired', {
+      level_id: result.levelId,
+      score: result.score,
+      stars: result.stars,
+    });
+  }
+
+  /**
+   * Fire level_failed analytics event.
+   * Called when player fails the level (moves = 0 and score < 1-star threshold).
+   */
+  private fireLevelFailedAnalytics(result: LevelResult): void {
+    const thresholds = this.scoreSystem.getStarThresholds();
+    const oneStarThreshold = thresholds[0];
+    const scoreDeficit = Math.max(0, oneStarThreshold - result.score);
+    const ratio = oneStarThreshold > 0 ? result.score / oneStarThreshold : 0;
+    const failModalType = ratio >= FAIL_CLOSE_RATIO ? 'close' : 'far';
+
+    const analytics = AnalyticsManager.getInstance();
+
+    analytics.trackLevelFailed({
+      level_id: result.levelId,
+      score: result.score,
+      moves_used: result.movesUsed,
+      duration_seconds: result.durationSeconds,
+      closest_star_threshold: oneStarThreshold,
+      score_deficit: scoreDeficit,
+      cascades: result.totalCascades,
+      fail_modal_type: failModalType,
+      purchased_extra_moves: false, // TODO: Track if extra moves were purchased this attempt
+    }).catch((err) => {
+      this.logger.error('fireLevelFailedAnalytics', 'Failed to fire level_failed', err);
+    });
+
+    this.logger.info('fireLevelFailedAnalytics', 'level_failed analytics event fired', {
+      level_id: result.levelId,
+      score: result.score,
+      fail_modal_type: failModalType,
+      score_deficit: scoreDeficit,
+    });
   }
 
   // ------------------------------------------------------------------
@@ -1554,28 +1677,22 @@ export class GameplayScene extends Phaser.Scene {
 
   /**
    * Deduct one life on level failure.
-   * Sets lastLifeLostAt for regen timer and persists to SDK.
+   * Uses LivesSystem for deduction logic and persists to SDK.
    */
   private deductLife(): void {
     const progress = getPlayerProgress(this.registry);
+    const livesSystem = LivesSystem.getInstance();
 
-    if (progress.lives <= 0) {
-      this.logger.info('deductLife', 'Already at 0 lives — no deduction');
-      return;
-    }
+    // Use LivesSystem to handle deduction and event emission
+    livesSystem.deductLife(progress);
 
-    progress.lives = Math.max(0, progress.lives - 1);
-    progress.lastLifeLostAt = new Date().toISOString();
-
+    // Update registry
     setPlayerProgress(this.registry, progress);
 
-    this.logger.info('deductLife', `Life deducted — ${progress.lives} remaining`, {
+    this.logger.info('deductLife', `Life deducted via LivesSystem — ${progress.lives} remaining`, {
       lives: progress.lives,
       lastLifeLostAt: progress.lastLifeLostAt,
     });
-
-    // Emit event
-    this.game.events.emit(GameEvent.LIFE_LOST, { livesRemaining: progress.lives });
 
     // Persist to SDK (fire-and-forget)
     const pdm = new PlayerDataManager();

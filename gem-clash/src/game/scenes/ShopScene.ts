@@ -722,19 +722,23 @@ export class ShopScene extends Phaser.Scene {
 
       if (!result.success) {
         log.warn('executePurchase', 'Purchase did not succeed', { error: result.error });
-        this.showErrorToast(result.error ?? 'Purchase failed');
+        // Don't show error toast for cancellation
+        if (result.error !== 'cancelled') {
+          this.showErrorToast(result.error ?? 'Purchase failed');
+        }
         return;
       }
 
       log.info('executePurchase', 'Purchase completed', { sku });
 
-      // Deliver product
+      // Deliver product (the PaymentManager already emitted PURCHASE_GRANT_ITEM,
+      // but we also call deliverProduct here to update local state immediately)
       this.deliverProduct(sku);
 
-      // Save progress
+      // Save progress with flush=true for critical purchase data
       const pdm = new PlayerDataManager();
-      await pdm.saveProgress(this.progress);
-      log.info('executePurchase', 'Progress saved');
+      await pdm.saveProgress(this.progress, true);
+      log.info('executePurchase', 'Progress saved and flushed');
 
       // Celebration animation
       CelebrationSystem.celebratePurchase(this, product.name);
@@ -863,7 +867,7 @@ export class ShopScene extends Phaser.Scene {
 
   // ── Free Gift Claim ─────────────────────────────────────────
 
-  private claimFreeGift(): void {
+  private async claimFreeGift(): Promise<void> {
     log.info('claimFreeGift', 'Claiming free gift');
     const reward = this.offerManager.collectFreeGift(this.progress);
 
@@ -874,7 +878,8 @@ export class ShopScene extends Phaser.Scene {
 
     setPlayerProgress(this.registry, this.progress);
     const pdm = new PlayerDataManager();
-    pdm.saveProgress(this.progress);
+    await pdm.saveProgress(this.progress, true);
+    log.info('claimFreeGift', 'Free gift progress saved and flushed');
 
     CelebrationSystem.celebratePurchase(this, 'Free Gift');
     log.info('claimFreeGift', 'Free gift claimed', { reward });

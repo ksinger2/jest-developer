@@ -30,6 +30,8 @@ import {
 } from '../../utils/Constants';
 import { StarRating } from '../../types/game.types';
 import { getPlayerProgress } from '../../utils/RegistryHelper';
+import { LivesSystem } from '../systems/LivesSystem';
+import { GlModal } from '../../ui/UIComponents';
 
 const log = new Logger('LevelSelectScene');
 
@@ -63,6 +65,7 @@ export class LevelSelectScene extends Phaser.Scene {
   private selectedRing?: Phaser.GameObjects.Graphics;
   private selectedRingTween?: Phaser.Tweens.Tween;
   private playBtnText?: Phaser.GameObjects.Text;
+  private noLivesModal: GlModal | null = null;
 
   constructor() {
     super({ key: SCENE_LEVEL_SELECT });
@@ -372,8 +375,77 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   private onPlayPressed(): void {
+    log.info('onPlayPressed', 'Play button pressed', { level: this.currentLevel });
+
+    // Check if player has lives
+    const progress = getPlayerProgress(this.registry);
+    const livesSystem = LivesSystem.getInstance();
+    const status = livesSystem.getStatus(progress);
+
+    if (!status.canPlay) {
+      log.info('onPlayPressed', 'No lives available - showing modal', {
+        lives: status.currentLives,
+        timeUntilNextLife: status.timeUntilNextLife,
+      });
+      this.showNoLivesModal(status.timeUntilNextLife);
+      return;
+    }
+
     log.info('onPlayPressed', 'Starting gameplay', { level: this.currentLevel });
     this.registry.set('selectedLevel', this.currentLevel);
     fadeTransition(this, SCENE_GAMEPLAY);
+  }
+
+  /**
+   * Show modal when player has no lives.
+   * Displays time until next life regenerates.
+   */
+  private showNoLivesModal(timeUntilNextLife: string): void {
+    if (this.noLivesModal) return;
+
+    log.info('showNoLivesModal', 'Displaying no lives modal');
+
+    this.noLivesModal = new GlModal(this, { title: 'No Lives!', width: 320 });
+
+    const msg = this.add.text(0, 0, 'You have run out of lives.', {
+      fontFamily: FONT_FAMILY,
+      fontSize: `${FONT_SIZE_SMALL}px`,
+      color: '#AAAAAA',
+      align: 'center',
+    }).setOrigin(0.5, 0);
+    this.noLivesModal.addContent(msg);
+
+    const timerMsg = this.add.text(0, 0, `Next life in: ${timeUntilNextLife}`, {
+      fontFamily: FONT_FAMILY,
+      fontSize: `${FONT_SIZE_SMALL}px`,
+      color: '#FFD700',
+      align: 'center',
+    }).setOrigin(0.5, 0);
+    this.noLivesModal.addContent(timerMsg);
+
+    const okBtn = new GlButton(this, 0, 0, 'OK', {
+      width: 160, height: 40, gradient: GRADIENT_BUTTON_PRIMARY,
+    });
+    okBtn.onClick(() => {
+      log.info('showNoLivesModal', 'OK pressed');
+      this.hideNoLivesModal();
+    });
+    this.noLivesModal.addContent(okBtn, 40);
+
+    this.noLivesModal.onClose(() => {
+      this.hideNoLivesModal();
+    });
+
+    this.noLivesModal.show();
+  }
+
+  /**
+   * Hide the no lives modal.
+   */
+  private hideNoLivesModal(): void {
+    if (this.noLivesModal) {
+      this.noLivesModal.destroy();
+      this.noLivesModal = null;
+    }
   }
 }

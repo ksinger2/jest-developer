@@ -14,7 +14,10 @@ import type {
   JestPlayer,
   JestPlayerData,
   JestProduct,
-  JestPurchaseResult,
+  JestBeginPurchaseResult,
+  JestCompletePurchaseResult,
+  JestIncompletePurchasesResult,
+  JestEntryPayload,
   JestNotificationOptions,
   JestAnalyticsEvent,
 } from './types';
@@ -161,45 +164,152 @@ export class JestSDKWrapper {
     }
   }
 
-  /** Initiate a product purchase */
-  async purchaseProduct(productId: string): Promise<JestPurchaseResult> {
-    this.logger.debug('purchaseProduct', 'Initiating purchase', { productId });
+  /**
+   * Begin a purchase flow for the given product SKU.
+   * Returns success with purchase data, cancel, or error.
+   */
+  async beginPurchase(productSku: string): Promise<JestBeginPurchaseResult> {
+    this.logger.debug('beginPurchase', 'Initiating purchase', { productSku });
 
-    const mockResult: JestPurchaseResult = {
-      success: true,
-      purchaseToken: `mock-token-${Date.now()}`,
-      productId,
+    const mockResult: JestBeginPurchaseResult = {
+      result: 'success',
+      purchase: {
+        purchaseToken: `mock-token-${Date.now()}`,
+        productSku,
+        credits: 1,
+        createdAt: Date.now(),
+        completedAt: null,
+      },
+      purchaseSigned: 'mock-signed-payload',
     };
 
     try {
       if (this.mockMode || !this.sdk) {
-        this.logger.info('purchaseProduct', '[MOCK] Returning mock purchase result', { mockResult });
+        this.logger.info('beginPurchase', '[MOCK] Returning mock purchase result', { mockResult });
         return mockResult;
       }
 
-      const result = await this.sdk.purchaseProduct(productId);
-      this.logger.info('purchaseProduct', 'Purchase completed', { result });
+      const result = await this.sdk.payments.beginPurchase({ productSku });
+      this.logger.info('beginPurchase', 'Purchase flow completed', { result: result.result });
       return result;
     } catch (err) {
-      this.logger.error('purchaseProduct', 'Purchase failed', err);
-      return { success: false, productId, error: String(err) };
+      this.logger.error('beginPurchase', 'Purchase failed', err);
+      return { result: 'error', error: 'internal_error' };
     }
   }
 
-  /** Consume a purchase so the product is delivered */
-  async consumePurchase(purchaseToken: string): Promise<void> {
-    this.logger.debug('consumePurchase', 'Consuming purchase', { purchaseToken });
+  /**
+   * Complete a purchase after granting the item to the player.
+   * MUST be called AFTER durable item grant to prevent double-grants.
+   */
+  async completePurchase(purchaseToken: string): Promise<JestCompletePurchaseResult> {
+    this.logger.debug('completePurchase', 'Completing purchase', { purchaseToken });
 
     try {
       if (this.mockMode || !this.sdk) {
-        this.logger.info('consumePurchase', '[MOCK] Purchase consumption simulated', { purchaseToken });
+        this.logger.info('completePurchase', '[MOCK] Purchase completion simulated', { purchaseToken });
+        return { result: 'success' };
+      }
+
+      const result = await this.sdk.payments.completePurchase({ purchaseToken });
+      this.logger.info('completePurchase', 'Purchase completed successfully', { purchaseToken, result: result.result });
+      return result;
+    } catch (err) {
+      this.logger.error('completePurchase', 'Failed to complete purchase', err);
+      return { result: 'error', error: 'internal_error' };
+    }
+  }
+
+  /**
+   * Recover incomplete purchases from previous sessions.
+   * MUST be called on app startup and after login to handle crash recovery.
+   * Per Jest docs: Guest players cannot have incomplete purchases.
+   * If hasMore is true, call again after completing returned purchases.
+   */
+  async getIncompletePurchases(): Promise<JestIncompletePurchasesResult> {
+    this.logger.debug('getIncompletePurchases', 'Checking for incomplete purchases');
+
+    const emptyResult: JestIncompletePurchasesResult = {
+      purchases: [],
+      purchasesSigned: '',
+      hasMore: false,
+    };
+
+    try {
+      if (this.mockMode || !this.sdk) {
+        this.logger.info('getIncompletePurchases', '[MOCK] No incomplete purchases in mock mode');
+        return emptyResult;
+      }
+
+      const result = await this.sdk.payments.getIncompletePurchases();
+      this.logger.info('getIncompletePurchases', 'Incomplete purchases retrieved', {
+        count: result.purchases.length,
+        hasMore: result.hasMore,
+      });
+      return result;
+    } catch (err) {
+      this.logger.error('getIncompletePurchases', 'Failed to get incomplete purchases', err);
+      return emptyResult;
+    }
+  }
+
+  /**
+   * Flush any pending player data changes to the server immediately.
+   * The SDK batches updates; this forces immediate persistence.
+   *
+   * MUST be called:
+   * - On app pause/exit (visibilitychange, beforeunload)
+   * - After completing a purchase
+   * - After critical progress saves (level complete, star earn)
+   */
+  async flushPlayerData(): Promise<void> {
+    this.logger.debug('flushPlayerData', 'Flushing player data to server');
+
+    try {
+      if (this.mockMode || !this.sdk) {
+        this.logger.info('flushPlayerData', '[MOCK] Flush simulated');
         return;
       }
 
-      await this.sdk.consumePurchase(purchaseToken);
-      this.logger.info('consumePurchase', 'Purchase consumed successfully', { purchaseToken });
+      await this.sdk.data.flush();
+      this.logger.info('flushPlayerData', 'Player data flushed successfully');
     } catch (err) {
-      this.logger.error('consumePurchase', 'Failed to consume purchase', err);
+      this.logger.error('flushPlayerData', 'Failed to flush player data', err);
+    }
+  }
+
+  /**
+   * Get the entry payload that was passed when the game was launched.
+   * Used for challenge attribution, notification attribution, referral tracking.
+   * Returns empty object if no payload was provided.
+   */
+  getEntryPayload(): JestEntryPayload {
+    this.logger.debug('getEntryPayload', 'Fetching entry payload');
+    const emptyResult: JestEntryPayload = {};
+
+    try {
+      if (this.mockMode || !this.sdk) {
+        // In dev mode, check URL for test payload (per Jest docs)
+        const urlParams = new URLSearchParams(window.location.search);
+        const encoded = urlParams.get('entryPayload');
+        if (encoded) {
+          try {
+            const decoded = JSON.parse(decodeURIComponent(encoded));
+            this.logger.info('getEntryPayload', '[MOCK] Entry payload from URL', { decoded });
+            return decoded;
+          } catch {
+            this.logger.warn('getEntryPayload', '[MOCK] Failed to parse URL entry payload');
+          }
+        }
+        return emptyResult;
+      }
+
+      const payload = this.sdk.getEntryPayload();
+      this.logger.info('getEntryPayload', 'Entry payload retrieved', { payload });
+      return payload;
+    } catch (err) {
+      this.logger.error('getEntryPayload', 'Failed to get entry payload', err);
+      return emptyResult;
     }
   }
 
