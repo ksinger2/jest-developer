@@ -9,6 +9,7 @@
  */
 
 import Phaser from 'phaser';
+import { setupHighDPICamera } from '../../utils/HighDPI';
 import { GlButton, GlHUD, GlModal, GlRibbon } from '../../ui/UIComponents';
 import { CelebrationSystem } from '../../ui/CelebrationSystem';
 import { OfferManager } from '../systems/OfferManager';
@@ -25,16 +26,16 @@ import {
   GRADIENT_BUTTON_PRIMARY,
   GAME_WIDTH,
   GAME_HEIGHT,
-  MARGIN_EDGE,
-  SHOP_SECTION_TITLE_SIZE,
   ASSET_KEY_COIN,
-  ASSET_KEY_CHEST_CLOSED,
   ASSET_KEY_CHEST_OPEN,
+  ASSET_KEY_CHEST_SUPER,
+  ASSET_KEY_GIFT_BOX,
   ASSET_KEY_HAMMER,
   ASSET_KEY_RAINBOW,
   ASSET_KEY_BG_SHOP,
   ASSET_KEY_HEADER_SHOP,
-  ASSET_KEY_ARROW_LEFT,
+  ASSET_KEY_BTN_BACK,
+  DIGIT_TEXTURE_KEYS,
 } from '../../utils/Constants';
 import {
   PRODUCT_CATALOG,
@@ -49,60 +50,53 @@ import { PlayerDataManager } from '../../sdk/PlayerDataManager';
 
 const log = new Logger('ShopScene');
 
-// ── Layout Y anchors (redesigned for proper spacing) ─────────
-const Y_RIBBON_CENTER = 68;
-const Y_CURRENCY_TITLE = 96;
-const Y_CURRENCY_CARDS_TOP = 116;
-const Y_BOOSTER_TITLE = 244;
-const Y_BOOSTER_TILES_TOP = 264;
-const Y_FREE_GIFT_TOP = 356;
-const Y_BACK_BTN_CENTER = 440;
+// ── Layout Y anchors (more space under shop header) ──────────
+const Y_RIBBON_CENTER = 52;
+const Y_CURRENCY_TITLE = 120;
+const Y_CURRENCY_CARDS_TOP = 148;
+const Y_BOOSTER_TITLE = 292;
+const Y_BOOSTER_TILES_TOP = 318;
+const Y_FREE_GIFT_TOP = 448;
+const Y_BACK_BTN_CENTER = 530;
 
 // ── Card dimensions ───────────────────────────────────────────
-const CARD_W = 80;
-const CARD_H = 115;
-const CARD_GAP = 10;
-const CARD_BG = 0x2A1A4E;
-const CARD_BORDER = 0x6C3BD1;
-const CARD_BORDER_ALPHA = 0.85;
-const CARD_RADIUS = 10;
-const CARD_ICON_SIZE = 34;
-const CARD_BUY_BTN_W = 68;
-const CARD_BUY_BTN_H = 44;
+const CARD_W = 82;
+const CARD_H = 120;
+const CARD_GAP = 12;
+const CARD_BG = 0x16213E;
+const CARD_BORDER = 0x6C5CE7;
+const CARD_BORDER_ALPHA = 0.8;
+const CARD_RADIUS = 12;
+const CARD_ICON_SIZE = 36;
+const CARD_BUY_BTN_W = 52;
+const CARD_BUY_BTN_H = 26;
 
 // ── Booster tile dimensions ───────────────────────────────────
-const TILE_W = 60;
-const TILE_H = 80;
+const TILE_W = 80;
+const TILE_H = 95;
 const TILE_GAP = 16;
-const TILE_BG = 0x2A1A4E;
-const TILE_BG_ALPHA = 0.8;
-const TILE_BORDER = 0x6C3BD1;
-const TILE_BORDER_ALPHA = 0.6;
-const TILE_RADIUS = 8;
-const TILE_ICON_SIZE = 28;
-const TILE_BUY_BTN_W = 52;
-const TILE_BUY_BTN_H = 44;
+const TILE_BG = 0x16213E;
+const TILE_BG_ALPHA = 0.9;
+const TILE_BORDER = 0x6C5CE7;
+const TILE_BORDER_ALPHA = 0.7;
+const TILE_RADIUS = 12;
+const TILE_ICON_SIZE = 36;
+const TILE_BUY_BTN_W = 56;
+const TILE_BUY_BTN_H = 26;
 
-// ── Free Gift strip ───────────────────────────────────────────
-const GIFT_W = 350;
-const GIFT_H = 50;
-const GIFT_BG = 0x2A1A4E;
+// ── Free Gift strip (compact like main menu) ─────────────────
+const GIFT_W = 140;
+const GIFT_H = 40;
+const GIFT_BG = 0xB8860B;  // Match main menu dark goldenrod
 const GIFT_BG_ALPHA = 0.95;
 const GIFT_BORDER = 0xFFD700;
-const GIFT_BORDER_ALPHA = 0.6;
-const GIFT_RADIUS = 12;
-const GIFT_CHEST_SIZE = 32;
-const GIFT_CLAIM_W = 48;
-const GIFT_CLAIM_H = 28;
+const GIFT_BORDER_ALPHA = 0.8;
+const GIFT_RADIUS = 10;
 
 // ── Animation ─────────────────────────────────────────────────
 const STAGGER_DURATION = 200;
 const STAGGER_DELAY = 60;
 const STAGGER_OFFSET_Y = 20;
-
-// ── Back button ───────────────────────────────────────────────
-const BACK_BTN_W = 140;
-const BACK_BTN_H = 44;
 
 /** Helper to find a product by SKU enum value */
 function findProduct(sku: ProductSKU): ProductInfo | undefined {
@@ -110,7 +104,7 @@ function findProduct(sku: ProductSKU): ProductInfo | undefined {
 }
 
 /** Section title color */
-const GOLD_HEX = '#FFB800';
+const GOLD_HEX = '#FFD93D';
 
 export class ShopScene extends Phaser.Scene {
   private buyButtons: Map<string, GlButton> = new Map();
@@ -122,8 +116,9 @@ export class ShopScene extends Phaser.Scene {
   private offerManager!: OfferManager;
   private freeGiftTimerText!: Phaser.GameObjects.Text;
   private freeGiftTimerEvent: Phaser.Time.TimerEvent | null = null;
-  private freeGiftClaimBtn: GlButton | null = null;
   private claimPulseTween: Phaser.Tweens.Tween | null = null;
+  private freeGiftIcon?: Phaser.GameObjects.Image;
+  private freeGiftLabel?: Phaser.GameObjects.Text;
   private entryTweens: Phaser.Tweens.Tween[] = [];
   private staggerItems: Phaser.GameObjects.Container[] = [];
 
@@ -134,6 +129,10 @@ export class ShopScene extends Phaser.Scene {
 
   create(): void {
     log.info('create', 'Building shop layout');
+
+    // Set up high-DPI camera for crisp rendering
+    setupHighDPICamera(this);
+
     this.progress = getPlayerProgress(this.registry);
     this.offerManager = OfferManager.getInstance();
     this.buyButtons.clear();
@@ -191,7 +190,7 @@ export class ShopScene extends Phaser.Scene {
   private buildRibbon(): void {
     if (this.textures.exists(ASSET_KEY_HEADER_SHOP)) {
       const header = this.add.image(Math.round(GAME_WIDTH / 2), Y_RIBBON_CENTER, ASSET_KEY_HEADER_SHOP);
-      const headerScale = 180 / header.width;
+      const headerScale = 220 / header.width;  // Larger banner
       header.setScale(headerScale);
       header.setDepth(5);
       log.debug('buildRibbon', 'Shop header sprite placed');
@@ -204,18 +203,26 @@ export class ShopScene extends Phaser.Scene {
   // ── Currency Packs (y:112-264) ──────────────────────────────
 
   private buildCurrencySection(): void {
-    this.add.text(MARGIN_EDGE, Y_CURRENCY_TITLE, 'Currency Packs', {
+    // Calculate left edge of cards for header alignment
+    const cardsTotalWidth = CARD_W * 4 + CARD_GAP * 3;
+    const cardsLeftX = Math.round((GAME_WIDTH - cardsTotalWidth) / 2);
+
+    const titleText = this.add.text(cardsLeftX, Y_CURRENCY_TITLE, 'Currency Packs', {
       fontFamily: FONT_FAMILY,
-      fontSize: `${SHOP_SECTION_TITLE_SIZE}px`,
+      fontSize: '20px',
       color: GOLD_HEX,
       fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 3,
+      shadow: { offsetX: 1, offsetY: 2, blur: 3, color: '#000000', fill: true },
     }).setOrigin(0, 0);
+    titleText.setResolution(4);
 
     const packs: { sku: ProductSKU; label: string; iconKey: string }[] = [
-      { sku: ProductSKU.PACK_BEGINNER, label: 'Beginner', iconKey: ASSET_KEY_COIN },
-      { sku: ProductSKU.PACK_JUMBO, label: 'Jumbo', iconKey: ASSET_KEY_COIN },
-      { sku: ProductSKU.PACK_SUPER, label: 'Super', iconKey: ASSET_KEY_CHEST_CLOSED },
-      { sku: ProductSKU.PACK_MEGA, label: 'Mega', iconKey: ASSET_KEY_CHEST_OPEN },
+      { sku: ProductSKU.PACK_BEGINNER, label: '250', iconKey: ASSET_KEY_COIN },
+      { sku: ProductSKU.PACK_JUMBO, label: '1000', iconKey: ASSET_KEY_COIN },
+      { sku: ProductSKU.PACK_SUPER, label: '3000', iconKey: ASSET_KEY_CHEST_OPEN },
+      { sku: ProductSKU.PACK_MEGA, label: '8000', iconKey: ASSET_KEY_CHEST_SUPER },
     ];
 
     const totalWidth = CARD_W * 4 + CARD_GAP * 3;
@@ -253,11 +260,29 @@ export class ShopScene extends Phaser.Scene {
     bg.strokeRoundedRect(-halfW, -halfH, CARD_W, CARD_H, CARD_RADIUS);
     container.add(bg);
 
-    // Icon (texture-based if loaded, fallback to graphics)
-    const iconY = -halfH + 8 + Math.round(CARD_ICON_SIZE / 2);
+    // Icon - all icons centered at same Y for alignment (moved up 5px)
+    const isSuperChest = iconKey === ASSET_KEY_CHEST_SUPER;
+    const isOpenChest = iconKey === ASSET_KEY_CHEST_OPEN;
+    const isChest = isSuperChest || isOpenChest;
+    // Chests need more space to display properly (they're wide artwork)
+    const iconSize = isChest ? 64 : CARD_ICON_SIZE;
+    // Both chests at same Y, coins slightly higher
+    const iconY = isChest ? -halfH + 39 : -halfH + 35;
     if (this.textures.exists(iconKey)) {
-      const icon = this.add.image(0, iconY, iconKey)
-        .setDisplaySize(CARD_ICON_SIZE, CARD_ICON_SIZE);
+      const icon = this.add.image(0, iconY, iconKey);
+      // Get texture dimensions for proper scaling
+      const frame = icon.frame;
+      const texW = frame.width;
+      const texH = frame.height;
+      // Chests: stretch vertically (1.3x height), coins: uniform scale
+      if (isChest) {
+        const scaleX = iconSize / Math.max(texW, texH);
+        const scaleY = scaleX * 1.3; // Stretch Y by 30%
+        icon.setScale(scaleX, scaleY);
+      } else {
+        const scale = iconSize / Math.max(texW, texH);
+        icon.setScale(scale);
+      }
       container.add(icon);
     } else {
       // Fallback: draw a gold circle for coin packs
@@ -269,29 +294,29 @@ export class ShopScene extends Phaser.Scene {
       container.add(fallbackG);
     }
 
-    // Title text (13px bold white)
-    const titleText = this.add.text(0, -halfH + 46, label, {
-      fontFamily: FONT_FAMILY,
-      fontSize: '13px',
-      color: '#FFFFFF',
-      fontStyle: 'bold',
-      align: 'center',
-    }).setOrigin(0.5, 0);
-    container.add(titleText);
+    // Buy button positioned inside card
+    const btnY = halfH - CARD_BUY_BTN_H / 2 - 8; // 8px from bottom edge
 
-    // Description text (12px #AAAAAA)
-    const descText = this.add.text(0, -halfH + 60, product.description, {
-      fontFamily: FONT_FAMILY,
-      fontSize: '12px',
-      color: '#AAAAAA',
-      align: 'center',
-      wordWrap: { width: CARD_W - 6 },
-    }).setOrigin(0.5, 0);
-    container.add(descText);
+    // Coin amount - use digit sprites if available (moved up 5px)
+    const titleY = btnY - CARD_BUY_BTN_H / 2 - 17; // 17px above button (was 12)
+    const digitSprites = this.buildDigitSprites(label, 0, titleY, 16, -2);
+    if (digitSprites.length > 0) {
+      digitSprites.forEach(sprite => container.add(sprite));
+    } else {
+      // Fallback to text if digit assets not loaded
+      const cardTitleText = this.add.text(0, titleY, label, {
+        fontFamily: FONT_FAMILY,
+        fontSize: '14px',
+        color: '#FFFFFF',
+        fontStyle: 'bold',
+        align: 'center',
+      }).setOrigin(0.5, 0.5);
+      cardTitleText.setResolution(4);
+      container.add(cardTitleText);
+    }
 
-    // Buy button at bottom of card
-    const btnY = -halfH + 90;
-    const buyBtn = new GlButton(this, cx, cy + btnY, `${product.priceInTokens}T`, {
+    // Buy button
+    const buyBtn = new GlButton(this, cx, cy + btnY, `${product.priceInTokens} T`, {
       width: CARD_BUY_BTN_W,
       height: CARD_BUY_BTN_H,
       gradient: GRADIENT_BUTTON_GOLD,
@@ -306,17 +331,25 @@ export class ShopScene extends Phaser.Scene {
   // ── Boosters (y:280-384) ────────────────────────────────────
 
   private buildBoosterSection(): void {
-    this.add.text(MARGIN_EDGE, Y_BOOSTER_TITLE, 'Boosters', {
+    // Calculate left edge of tiles for header alignment
+    const totalTileWidth = TILE_W * 3 + TILE_GAP * 2;
+    const tilesLeftX = Math.round((GAME_WIDTH - totalTileWidth) / 2);
+
+    const boosterTitle = this.add.text(tilesLeftX, Y_BOOSTER_TITLE, 'Boosters', {
       fontFamily: FONT_FAMILY,
-      fontSize: `${SHOP_SECTION_TITLE_SIZE}px`,
+      fontSize: '20px',
       color: GOLD_HEX,
       fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 3,
+      shadow: { offsetX: 1, offsetY: 2, blur: 3, color: '#000000', fill: true },
     }).setOrigin(0, 0);
+    boosterTitle.setResolution(4);
 
-    const boosters: { sku: ProductSKU; label: string; iconKey: string | null; iconText?: string }[] = [
-      { sku: ProductSKU.HAMMER, label: 'Hammer', iconKey: ASSET_KEY_HAMMER },
-      { sku: ProductSKU.RAINBOW, label: 'Rainbow', iconKey: ASSET_KEY_RAINBOW },
-      { sku: ProductSKU.EXTRA_MOVES, label: '+3 Moves', iconKey: null, iconText: '+3' },
+    const boosters: { sku: ProductSKU; iconKey: string | null; iconText?: string; iconScale?: number }[] = [
+      { sku: ProductSKU.HAMMER, iconKey: ASSET_KEY_HAMMER, iconScale: 2.0 },
+      { sku: ProductSKU.RAINBOW, iconKey: ASSET_KEY_RAINBOW },
+      { sku: ProductSKU.EXTRA_MOVES, iconKey: null, iconText: '+3' },
     ];
 
     const totalWidth = TILE_W * 3 + TILE_GAP * 2;
@@ -329,7 +362,7 @@ export class ShopScene extends Phaser.Scene {
       const cx = startX + i * (TILE_W + TILE_GAP);
       const cy = Math.round(Y_BOOSTER_TILES_TOP + TILE_H / 2);
       const tile = this.buildBoosterTile(
-        cx, cy, booster.label, product, booster.iconKey, booster.iconText,
+        cx, cy, product, booster.iconKey, booster.iconText, booster.iconScale,
       );
       this.staggerItems.push(tile);
     });
@@ -340,10 +373,10 @@ export class ShopScene extends Phaser.Scene {
   private buildBoosterTile(
     cx: number,
     cy: number,
-    label: string,
     product: ProductInfo,
     iconKey: string | null,
     iconText?: string,
+    iconScale?: number,
   ): Phaser.GameObjects.Container {
     const container = this.add.container(cx, cy);
     const halfW = TILE_W / 2;
@@ -357,41 +390,44 @@ export class ShopScene extends Phaser.Scene {
     bg.strokeRoundedRect(-halfW, -halfH, TILE_W, TILE_H, TILE_RADIUS);
     container.add(bg);
 
-    // Icon area (y: top + 6, centered)
-    const iconY = -halfH + 6 + Math.round(TILE_ICON_SIZE / 2);
+    // Icon area - centered vertically between top and buy button
+    const scaleMult = iconScale ?? 1.0;
+    const displaySize = TILE_ICON_SIZE * scaleMult;
+    const btnY = halfH - TILE_BUY_BTN_H / 2 - 6;
+    // Center icon in the space above the button
+    const iconAreaTop = -halfH + 8;
+    const iconAreaBottom = btnY - TILE_BUY_BTN_H / 2 - 4;
+    const iconY = (iconAreaTop + iconAreaBottom) / 2;
+
     if (iconKey && this.textures.exists(iconKey)) {
       const icon = this.add.image(0, iconY, iconKey)
-        .setDisplaySize(TILE_ICON_SIZE, TILE_ICON_SIZE);
+        .setDisplaySize(displaySize, displaySize);
       container.add(icon);
     } else if (iconText) {
-      // Text icon for +3 Moves
-      const txtIcon = this.add.text(0, iconY, iconText, {
-        fontFamily: FONT_FAMILY,
-        fontSize: `${FONT_SIZE_MEDIUM}px`,
-        color: '#FFD700',
-        fontStyle: 'bold',
-      }).setOrigin(0.5, 0.5);
-      container.add(txtIcon);
+      // Use digit typography assets for +3 Moves if available
+      const digitSprites = this.buildDigitSprites(iconText, 0, iconY, 24, 2);
+      if (digitSprites.length > 0) {
+        digitSprites.forEach(sprite => container.add(sprite));
+      } else {
+        // Fallback to text if digit assets not loaded
+        const txtIcon = this.add.text(0, iconY, iconText, {
+          fontFamily: FONT_FAMILY,
+          fontSize: '20px',
+          color: '#FFD700',
+          fontStyle: 'bold',
+        }).setOrigin(0.5, 0.5);
+        container.add(txtIcon);
+      }
     } else {
       // Fallback graphic
       const fallbackG = this.add.graphics();
       fallbackG.fillStyle(0xFFD700, 1);
-      fallbackG.fillCircle(0, iconY, Math.round(TILE_ICON_SIZE / 2));
+      fallbackG.fillCircle(0, iconY, Math.round(displaySize / 2));
       container.add(fallbackG);
     }
 
-    // Label text (12px white)
-    const labelText = this.add.text(0, -halfH + 40, label, {
-      fontFamily: FONT_FAMILY,
-      fontSize: '12px',
-      color: '#FFFFFF',
-      align: 'center',
-    }).setOrigin(0.5, 0);
-    container.add(labelText);
-
-    // Buy button
-    const btnY = -halfH + 56;
-    const buyBtn = new GlButton(this, cx, cy + btnY, `${product.priceInTokens}T`, {
+    // Buy button inside tile
+    const buyBtn = new GlButton(this, cx, cy + btnY, `${product.priceInTokens} T`, {
       width: TILE_BUY_BTN_W,
       height: TILE_BUY_BTN_H,
       gradient: GRADIENT_BUTTON_GOLD,
@@ -405,98 +441,67 @@ export class ShopScene extends Phaser.Scene {
 
   // ── Free Gift Strip (y:400-456) ─────────────────────────────
 
+  private freeGiftContainer!: Phaser.GameObjects.Container;
+  private freeGiftBg?: Phaser.GameObjects.Graphics;
+
   private buildFreeGiftStrip(): void {
     const cx = Math.round(GAME_WIDTH / 2);
     const cy = Math.round(Y_FREE_GIFT_TOP + GIFT_H / 2);
 
-    // Strip background
-    const bg = this.add.graphics();
-    bg.fillStyle(GIFT_BG, GIFT_BG_ALPHA);
-    bg.fillRoundedRect(
-      Math.round(cx - GIFT_W / 2),
-      Math.round(cy - GIFT_H / 2),
-      GIFT_W,
-      GIFT_H,
-      GIFT_RADIUS,
-    );
-    bg.lineStyle(1.5, GIFT_BORDER, GIFT_BORDER_ALPHA);
-    bg.strokeRoundedRect(
-      Math.round(cx - GIFT_W / 2),
-      Math.round(cy - GIFT_H / 2),
-      GIFT_W,
-      GIFT_H,
-      GIFT_RADIUS,
-    );
+    // Claim state (check early to determine initial appearance)
+    const canClaim = this.offerManager.canCollectFreeGift(this.progress);
+    const remainingMs = this.offerManager.getFreeGiftTimeRemaining(this.progress);
 
-    // Chest icon (left side)
-    const chestX = Math.round(cx - GIFT_W / 2 + 30);
-    if (this.textures.exists(ASSET_KEY_CHEST_CLOSED)) {
-      this.add.image(chestX, cy, ASSET_KEY_CHEST_CLOSED)
-        .setDisplaySize(GIFT_CHEST_SIZE, GIFT_CHEST_SIZE);
-    } else {
-      const chestG = this.add.graphics();
-      chestG.fillStyle(0x8B4513, 1);
-      chestG.fillRoundedRect(
-        chestX - Math.round(GIFT_CHEST_SIZE / 2),
-        cy - Math.round(GIFT_CHEST_SIZE / 2),
-        GIFT_CHEST_SIZE,
-        GIFT_CHEST_SIZE,
-        4,
-      );
-    }
+    // Gift icon OUTSIDE pulsing container for crisp rendering
+    this.freeGiftIcon = this.add.image(cx - 42, cy, ASSET_KEY_GIFT_BOX);
+    const giftScale = 44 / this.freeGiftIcon.width;
+    this.freeGiftIcon.setScale(giftScale);
+    this.freeGiftIcon.setDepth(10);
 
-    // "FREE GIFT!" text (center-left area)
-    this.add.text(Math.round(cx - 20), cy, 'FREE GIFT!', {
+    // "Free Gift!" text OUTSIDE pulsing container
+    this.freeGiftLabel = this.add.text(cx + 18, cy, 'Free Gift!', {
       fontFamily: FONT_FAMILY,
       fontSize: `${FONT_SIZE_SMALL}px`,
       color: '#FFFFFF',
       fontStyle: 'bold',
-    }).setOrigin(0.5, 0.5);
+    }).setOrigin(0.5, 0.5).setResolution(4);
+    this.freeGiftLabel.setDepth(10);
 
-    // Claim state
-    const canClaim = this.offerManager.canCollectFreeGift(this.progress);
-    const remainingMs = this.offerManager.getFreeGiftTimeRemaining(this.progress);
+    // Container for background only (this will pulse)
+    this.freeGiftContainer = this.add.container(cx, cy);
 
-    // Right side: either CLAIM button or timer
-    const rightX = Math.round(cx + GIFT_W / 2 - 48);
+    // Strip background - gold when available, grayed out when on cooldown
+    this.freeGiftBg = this.add.graphics();
+    this.drawGiftStripBackground(canClaim);
+    this.freeGiftContainer.add(this.freeGiftBg);
+
+    // Timer text - CENTERED (0, 0) when on cooldown
+    this.freeGiftTimerText = this.add.text(0, 0, '', {
+      fontFamily: FONT_FAMILY,
+      fontSize: `${FONT_SIZE_SMALL}px`,
+      color: '#FFFFFF',
+      fontStyle: 'bold',
+    }).setOrigin(0.5, 0.5).setVisible(false).setResolution(4);
+    this.freeGiftTimerText.setDepth(10);
+    this.freeGiftContainer.add(this.freeGiftTimerText);
+
+    // Make the entire strip clickable with a hit area
+    const hitZone = this.add.zone(0, 0, GIFT_W, GIFT_H);
+    hitZone.setInteractive({ useHandCursor: true });
+    this.freeGiftContainer.add(hitZone);
 
     if (canClaim) {
-      this.freeGiftClaimBtn = new GlButton(this, rightX, cy, 'CLAIM', {
-        width: GIFT_CLAIM_W,
-        height: GIFT_CLAIM_H,
-        gradient: GRADIENT_BUTTON_GOLD,
-        fontSize: FONT_SIZE_XS,
-      });
-      this.freeGiftClaimBtn.onClick(() => this.claimFreeGift());
-
-      // Pulse animation for claim button
-      this.claimPulseTween = this.tweens.add({
-        targets: this.freeGiftClaimBtn,
-        scaleX: 1.06,
-        scaleY: 1.06,
-        duration: 600,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-
-      // Timer text (hidden when claimable, but needed for reference)
-      this.freeGiftTimerText = this.add.text(rightX, cy, '', {
-        fontFamily: FONT_FAMILY,
-        fontSize: `${FONT_SIZE_XS}px`,
-        color: '#AAAAAA',
-      }).setOrigin(0.5, 0.5).setVisible(false);
+      this.freeGiftTimerText.setVisible(false);
+      this.freeGiftIcon?.setVisible(true);
+      this.freeGiftLabel?.setVisible(true);
+      this.setupGiftStripClickable(hitZone);
     } else {
-      this.freeGiftTimerText = this.add.text(
-        rightX,
-        cy,
-        this.offerManager.formatTimeRemaining(remainingMs),
-        {
-          fontFamily: FONT_FAMILY,
-          fontSize: `${FONT_SIZE_XS}px`,
-          color: '#AAAAAA',
-        },
-      ).setOrigin(0.5, 0.5);
+      // On cooldown - hide icon/label, show centered timer, gray out button
+      this.freeGiftIcon?.setVisible(false);
+      this.freeGiftLabel?.setVisible(false);
+      this.freeGiftTimerText.setText(this.offerManager.formatTimeRemaining(remainingMs));
+      this.freeGiftTimerText.setVisible(true);
+      hitZone.disableInteractive();
 
       // Start countdown timer
       this.freeGiftTimerEvent = this.time.addEvent({
@@ -508,8 +513,11 @@ export class ShopScene extends Phaser.Scene {
             this.freeGiftTimerText.setVisible(false);
             this.freeGiftTimerEvent?.remove();
             this.freeGiftTimerEvent = null;
-            // Switch to claim button
-            this.showClaimButton(rightX, cy);
+            // Restore active appearance
+            this.drawGiftStripBackground(true);
+            this.freeGiftIcon?.setVisible(true);
+            this.freeGiftLabel?.setVisible(true);
+            this.setupGiftStripClickable(hitZone);
           } else {
             this.freeGiftTimerText.setText(this.offerManager.formatTimeRemaining(ms));
           }
@@ -520,50 +528,123 @@ export class ShopScene extends Phaser.Scene {
     log.debug('buildFreeGiftStrip', 'Free gift strip rendered', { canClaim });
   }
 
-  /** Dynamically show the claim button when cooldown expires */
-  private showClaimButton(x: number, y: number): void {
-    this.freeGiftClaimBtn = new GlButton(this, x, y, 'CLAIM', {
-      width: GIFT_CLAIM_W,
-      height: GIFT_CLAIM_H,
-      gradient: GRADIENT_BUTTON_GOLD,
-      fontSize: FONT_SIZE_XS,
-    });
-    this.freeGiftClaimBtn.onClick(() => this.claimFreeGift());
+  /** Draw the gift strip background - gold when active, grayed when on cooldown */
+  private drawGiftStripBackground(isActive: boolean): void {
+    if (!this.freeGiftBg) return;
+    this.freeGiftBg.clear();
 
-    this.claimPulseTween = this.tweens.add({
-      targets: this.freeGiftClaimBtn,
-      scaleX: 1.06,
-      scaleY: 1.06,
-      duration: 600,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
+    if (isActive) {
+      // Gold background
+      this.freeGiftBg.fillStyle(GIFT_BG, GIFT_BG_ALPHA);
+      this.freeGiftBg.fillRoundedRect(-GIFT_W / 2, -GIFT_H / 2, GIFT_W, GIFT_H, GIFT_RADIUS);
+      this.freeGiftBg.lineStyle(2, GIFT_BORDER, GIFT_BORDER_ALPHA);
+      this.freeGiftBg.strokeRoundedRect(-GIFT_W / 2, -GIFT_H / 2, GIFT_W, GIFT_H, GIFT_RADIUS);
+    } else {
+      // Grayed out / disabled background
+      this.freeGiftBg.fillStyle(0x6b5a2e, 0.7); // Darker muted gold
+      this.freeGiftBg.fillRoundedRect(-GIFT_W / 2, -GIFT_H / 2, GIFT_W, GIFT_H, GIFT_RADIUS);
+      this.freeGiftBg.lineStyle(2, 0x8b7a4e, 0.6); // Muted border
+      this.freeGiftBg.strokeRoundedRect(-GIFT_W / 2, -GIFT_H / 2, GIFT_W, GIFT_H, GIFT_RADIUS);
+    }
+  }
+
+  /** Make the gift strip clickable and add hover effects */
+  private setupGiftStripClickable(hitZone: Phaser.GameObjects.Zone): void {
+    hitZone.setInteractive({ useHandCursor: true });
+    hitZone.on('pointerdown', () => this.claimFreeGift());
+    hitZone.on('pointerover', () => this.freeGiftContainer?.setAlpha(0.9));
+    hitZone.on('pointerout', () => this.freeGiftContainer?.setAlpha(1));
   }
 
   // ── Back Button (y:456-498) ─────────────────────────────────
 
   private buildBackButton(): void {
-    if (this.textures.exists(ASSET_KEY_ARROW_LEFT)) {
-      const arrow = this.add.image(36, Y_BACK_BTN_CENTER, ASSET_KEY_ARROW_LEFT);
-      const arrowScale = 32 / Math.max(arrow.width, arrow.height);
-      arrow.setScale(arrowScale);
-      arrow.setInteractive({ useHandCursor: true });
-      arrow.on('pointerdown', () => {
+    const btnY = Y_BACK_BTN_CENTER;
+
+    // Use the back button asset if available
+    if (this.textures.exists(ASSET_KEY_BTN_BACK)) {
+      const backBtn = this.add.image(Math.round(GAME_WIDTH / 2), btnY, ASSET_KEY_BTN_BACK);
+      const targetWidth = 120;
+      const scale = targetWidth / backBtn.width;
+      backBtn.setScale(scale);
+      backBtn.setInteractive({ useHandCursor: true });
+      backBtn.on('pointerdown', () => {
         log.info('buildBackButton', 'Navigating to main menu');
         this.scene.start(SCENE_MAIN_MENU);
       });
+      backBtn.on('pointerover', () => backBtn.setAlpha(0.85));
+      backBtn.on('pointerout', () => backBtn.setAlpha(1));
     } else {
-      new GlButton(this, Math.round(GAME_WIDTH / 2), Y_BACK_BTN_CENTER, 'Back', {
-        width: BACK_BTN_W,
-        height: BACK_BTN_H,
+      // Fallback to text button with secondary gradient (purple)
+      const backBtn = new GlButton(this, Math.round(GAME_WIDTH / 2), btnY, '← Back', {
+        width: 120,
+        height: 44,
         gradient: GRADIENT_BUTTON_PRIMARY,
-        fontSize: 18,
-      }).onClick(() => {
+        fontSize: FONT_SIZE_SMALL,
+      });
+      backBtn.onClick(() => {
         log.info('buildBackButton', 'Navigating to main menu');
         this.scene.start(SCENE_MAIN_MENU);
       });
     }
+  }
+
+  /**
+   * Builds an array of digit sprite images for the given text (supports 0-9 and +).
+   * Falls back to empty array if digit assets are not loaded.
+   */
+  private buildDigitSprites(
+    text: string,
+    centerX: number,
+    y: number,
+    digitSize: number,
+    spacing: number = 2,
+  ): Phaser.GameObjects.Image[] {
+    const sprites: Phaser.GameObjects.Image[] = [];
+    const chars = text.split('');
+
+    // Check if all digit textures exist first
+    let allExist = true;
+    for (const char of chars) {
+      if (char === '+') continue; // We'll handle + separately or skip
+      const digitIndex = parseInt(char, 10);
+      if (!isNaN(digitIndex) && digitIndex >= 0 && digitIndex <= 9) {
+        const textureKey = DIGIT_TEXTURE_KEYS[digitIndex];
+        if (!this.textures.exists(textureKey)) {
+          allExist = false;
+          break;
+        }
+      }
+    }
+
+    if (!allExist) return sprites; // Return empty if assets not loaded
+
+    const totalWidth = chars.length * (digitSize + spacing) - spacing;
+    let x = centerX - totalWidth / 2 + digitSize / 2;
+
+    for (const char of chars) {
+      if (char === '+') {
+        // Use symbol_plus typography asset
+        if (this.textures.exists('symbol_plus')) {
+          const plusSprite = this.add.image(x, y, 'symbol_plus');
+          const plusScale = digitSize / plusSprite.width;
+          plusSprite.setScale(plusScale);
+          sprites.push(plusSprite);
+        }
+      } else {
+        const digitIndex = parseInt(char, 10);
+        if (!isNaN(digitIndex) && digitIndex >= 0 && digitIndex <= 9) {
+          const textureKey = DIGIT_TEXTURE_KEYS[digitIndex];
+          const sprite = this.add.image(x, y, textureKey);
+          const scale = digitSize / sprite.width;
+          sprite.setScale(scale);
+          sprites.push(sprite);
+        }
+      }
+      x += digitSize + spacing;
+    }
+
+    return sprites;
   }
 
   // ── Stagger Entry Animation ─────────────────────────────────
@@ -615,18 +696,18 @@ export class ShopScene extends Phaser.Scene {
     const iconKey = this.getIconKeyForSKU(sku);
     if (iconKey && this.textures.exists(iconKey)) {
       const modalIcon = this.add.image(0, 0, iconKey).setDisplaySize(48, 48);
-      this.confirmModal.addContent(modalIcon, 52);
+      this.confirmModal.addContent(modalIcon, 56);
     }
 
     // Product name (16px bold white)
     const nameText = this.add.text(0, 0, product.name, {
       fontFamily: FONT_FAMILY,
-      fontSize: `${FONT_SIZE_SMALL}px`,
+      fontSize: `${FONT_SIZE_MEDIUM}px`,
       color: '#FFFFFF',
       fontStyle: 'bold',
       align: 'center',
-    }).setOrigin(0.5, 0);
-    this.confirmModal.addContent(nameText);
+    }).setOrigin(0.5, 0).setResolution(4);
+    this.confirmModal.addContent(nameText, 24);
 
     // Description (13px #AAAAAA)
     const descText = this.add.text(0, 0, product.description, {
@@ -635,37 +716,37 @@ export class ShopScene extends Phaser.Scene {
       color: '#AAAAAA',
       align: 'center',
       wordWrap: { width: 260 },
-    }).setOrigin(0.5, 0);
-    this.confirmModal.addContent(descText);
+    }).setOrigin(0.5, 0).setResolution(4);
+    this.confirmModal.addContent(descText, 28);
 
-    // Price (20px bold #FFD700)
-    const priceText = this.add.text(0, 0, `${product.priceInTokens} Tokens`, {
+    // Price - show USD instead of tokens
+    const priceText = this.add.text(0, 0, product.priceUSD, {
       fontFamily: FONT_FAMILY,
       fontSize: `${FONT_SIZE_MEDIUM}px`,
       color: '#FFD700',
       fontStyle: 'bold',
       align: 'center',
-    }).setOrigin(0.5, 0);
-    this.confirmModal.addContent(priceText);
+    }).setOrigin(0.5, 0).setResolution(4);
+    this.confirmModal.addContent(priceText, 48);  // More spacing before button
 
-    // Buy Now button (gold)
+    // Buy Now button (gold) - explicit height for proper spacing
     const buyBtn = new GlButton(this, 0, 0, 'Buy Now', {
-      width: 160,
-      height: 40,
+      width: 180,
+      height: 44,
       gradient: GRADIENT_BUTTON_GOLD,
-      fontSize: FONT_SIZE_SMALL,
+      fontSize: FONT_SIZE_MEDIUM,
     });
     buyBtn.onClick(() => {
       this.confirmModal?.hide();
       this.confirmModal = null;
       this.executePurchase(sku);
     });
-    this.confirmModal.addContent(buyBtn);
+    this.confirmModal.addContent(buyBtn, 52);
 
-    // Cancel button (purple)
+    // Cancel button (purple) - explicit height for proper spacing
     const cancelBtn = new GlButton(this, 0, 0, 'Cancel', {
-      width: 120,
-      height: 36,
+      width: 140,
+      height: 40,
       gradient: GRADIENT_BUTTON_PRIMARY,
       fontSize: FONT_SIZE_SMALL,
     });
@@ -674,7 +755,7 @@ export class ShopScene extends Phaser.Scene {
       this.confirmModal?.hide();
       this.confirmModal = null;
     });
-    this.confirmModal.addContent(cancelBtn);
+    this.confirmModal.addContent(cancelBtn, 48);
 
     this.confirmModal.show();
   }
@@ -686,7 +767,7 @@ export class ShopScene extends Phaser.Scene {
       case ProductSKU.PACK_JUMBO:
         return ASSET_KEY_COIN;
       case ProductSKU.PACK_SUPER:
-        return ASSET_KEY_CHEST_CLOSED;
+        return ASSET_KEY_CHEST_SUPER;
       case ProductSKU.PACK_MEGA:
         return ASSET_KEY_CHEST_OPEN;
       case ProductSKU.HAMMER:
@@ -843,25 +924,39 @@ export class ShopScene extends Phaser.Scene {
   // ── Error Toast ─────────────────────────────────────────────
 
   private showErrorToast(message: string): void {
+    // Position toast in center of screen to avoid being cut off
     const toast = this.add.text(
       Math.round(GAME_WIDTH / 2),
-      GAME_HEIGHT - 60,
+      Math.round(GAME_HEIGHT / 2),
       message,
       {
         fontFamily: FONT_FAMILY,
         fontSize: `${FONT_SIZE_SMALL}px`,
         color: '#FF5252',
         backgroundColor: '#1a1a2e',
-        padding: { x: 12, y: 6 },
+        padding: { x: 16, y: 10 },
       },
     ).setOrigin(0.5, 0.5).setDepth(2000);
 
+    // Animate: slide in, pause, fade out
+    toast.setAlpha(0);
+    toast.setY(Math.round(GAME_HEIGHT / 2) + 20);
     this.tweens.add({
       targets: toast,
-      alpha: 0,
-      delay: 2500,
-      duration: 500,
-      onComplete: () => toast.destroy(),
+      alpha: 1,
+      y: Math.round(GAME_HEIGHT / 2),
+      duration: 200,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.time.delayedCall(2000, () => {
+          this.tweens.add({
+            targets: toast,
+            alpha: 0,
+            duration: 300,
+            onComplete: () => toast.destroy(),
+          });
+        });
+      },
     });
   }
 
@@ -881,20 +976,33 @@ export class ShopScene extends Phaser.Scene {
     await pdm.saveProgress(this.progress, true);
     log.info('claimFreeGift', 'Free gift progress saved and flushed');
 
-    CelebrationSystem.celebratePurchase(this, 'Free Gift');
+    // Note: No celebration popup for free gift (removed per design feedback)
     log.info('claimFreeGift', 'Free gift claimed', { reward });
 
-    // Remove claim button and show timer for next cooldown
+    // Stop pulse animation and show timer for next cooldown
     if (this.claimPulseTween) {
       this.claimPulseTween.stop();
       this.claimPulseTween = null;
     }
-    if (this.freeGiftClaimBtn) {
-      this.freeGiftClaimBtn.setVisible(false);
-    }
+    // Reset container scale
+    this.freeGiftContainer?.setScale(1);
+
+    // Hide the gift icon and label, show timer instead
+    this.freeGiftIcon?.setVisible(false);
+    this.freeGiftLabel?.setVisible(false);
+
+    // Gray out the button background
+    this.drawGiftStripBackground(false);
+
     const remainingMs = this.offerManager.getFreeGiftTimeRemaining(this.progress);
     this.freeGiftTimerText.setText(this.offerManager.formatTimeRemaining(remainingMs));
     this.freeGiftTimerText.setVisible(true);
+
+    // Disable strip interaction during cooldown
+    const hitZone = this.freeGiftContainer?.list?.find(
+      (obj) => obj instanceof Phaser.GameObjects.Zone
+    ) as Phaser.GameObjects.Zone | undefined;
+    hitZone?.disableInteractive();
 
     if (this.freeGiftTimerEvent) {
       this.freeGiftTimerEvent.remove();
@@ -910,10 +1018,15 @@ export class ShopScene extends Phaser.Scene {
           this.freeGiftTimerText.setVisible(false);
           this.freeGiftTimerEvent?.remove();
           this.freeGiftTimerEvent = null;
-          // Re-show claim button
-          const rightX = Math.round(GAME_WIDTH / 2 + GIFT_W / 2 - 48);
-          const cy = Math.round(Y_FREE_GIFT_TOP + GIFT_H / 2);
-          this.showClaimButton(rightX, cy);
+          // Restore active appearance
+          this.drawGiftStripBackground(true);
+          // Show icon and label again
+          this.freeGiftIcon?.setVisible(true);
+          this.freeGiftLabel?.setVisible(true);
+          // Re-enable strip interaction
+          if (hitZone) {
+            this.setupGiftStripClickable(hitZone);
+          }
         } else {
           this.freeGiftTimerText.setText(this.offerManager.formatTimeRemaining(ms));
         }
@@ -951,7 +1064,6 @@ export class ShopScene extends Phaser.Scene {
     this.buyButtons.clear();
     this.confirmModal?.destroy();
     this.confirmModal = null;
-    this.freeGiftClaimBtn = null;
     this.staggerItems = [];
   }
 }

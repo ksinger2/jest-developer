@@ -9,10 +9,11 @@
 
 import Phaser from 'phaser';
 import { Logger } from '../../utils/Logger';
-import { GlButton, GlHUD, GlModal } from '../../ui/UIComponents';
-import { OfferManager } from '../systems/OfferManager';
+import { GlButton, GlHUD, GlModal, GlPanel } from '../../ui/UIComponents';
 import { fadeIn, fadeTransition } from '../../ui/Transitions';
 import { AnalyticsManager } from '../../analytics/AnalyticsManager';
+import { setupHighDPICamera } from '../../utils/HighDPI';
+import { DebugOverlay } from './DebugOverlay';
 import {
   SCENE_MAIN_MENU,
   SCENE_LEVEL_SELECT,
@@ -20,11 +21,9 @@ import {
   FONT_FAMILY,
   FONT_SIZE_XS,
   FONT_SIZE_SMALL,
-  FONT_SIZE_MEDIUM,
+  FONT_SIZE_HUD,
   UI_COLOR_PRIMARY,
-  UI_COLOR_SECONDARY,
-  UI_COLOR_ACCENT,
-  UI_COLOR_TEXT_DIM,
+  UI_COLOR_TEXT_TERTIARY,
   UI_COLOR_DANGER,
   GRADIENT_BUTTON_SUCCESS,
   GRADIENT_BUTTON_PRIMARY,
@@ -32,11 +31,12 @@ import {
   GAME_HEIGHT,
   GEM_TEXTURE_MAP,
   ASSET_KEY_LOGO,
-  ASSET_KEY_STAR,
-  ASSET_KEY_CHEST_CLOSED,
+  ASSET_KEY_SOUND_ON,
+  ASSET_KEY_SOUND_OFF,
   ASSET_KEY_BG_MENU,
   ASSET_KEY_BTN_PLAY_GREEN,
   ASSET_KEY_SETTINGS,
+  ASSET_KEY_BTN_SHOP,
 } from '../../utils/Constants';
 import { MAX_LIVES, LIFE_REGEN_MINUTES, PlayerProgress } from '../../types/game.types';
 import { getPlayerProgress, setPlayerProgress } from '../../utils/RegistryHelper';
@@ -47,41 +47,49 @@ const log = new Logger('MainMenuScene');
 /** Gem board preview dimensions */
 const PREVIEW_COLS = 8;
 const PREVIEW_ROWS = 6;
-const PREVIEW_GEM_SIZE = 26;
+const PREVIEW_GEM_SIZE = 30;      // Larger gem size
+const PREVIEW_GEM_SPACING = 32;   // Spacing between gem centers
 
-/** Layout constants */
-const LOGO_CENTER_Y = 140;
-const LOGO_MAX_WIDTH = 280;
-const LOGO_MAX_HEIGHT = 140;
-const SUBTITLE_Y = 219;
-const LEVEL_BADGE_Y = 255;
-const LEVEL_BADGE_WIDTH = 140;
-const LEVEL_BADGE_HEIGHT = 28;
-const LEVEL_BADGE_RADIUS = 16;
-const LEVEL_BADGE_FONT_SIZE = 20;
-const LEVEL_BADGE_ALPHA = 0.85;
-const BOARD_PREVIEW_START_Y = 295;
-const PLAY_BTN_Y = 480;
-const PLAY_BTN_WIDTH = 240;
-const PLAY_BTN_HEIGHT = 52;
+/**
+ * Per-gem visual scale adjustments.
+ * Different gems have different visual content sizes within their 128x128 bounding boxes.
+ * These multipliers compensate to make them appear uniform in size.
+ * Values > 1 make the gem appear larger, < 1 make it smaller.
+ */
+const GEM_VISUAL_SCALE: Record<string, number> = {
+  gem_heart: 1.0,      // Heart fills its box well - reference size
+  gem_diamond: 1.15,   // Diamond has more whitespace - scale up
+  gem_square: 0.95,    // Square fills more - scale down slightly
+  gem_hexagon: 1.0,    // New hexagon gem (replaces triangle)
+  gem_circle: 1.0,     // Circle is balanced
+  gem_oval: 1.0,       // New oval gem (replaces star)
+};
+
+/** Main panel constants */
+const PANEL_CENTER_X = 195;
+const PANEL_CENTER_Y = 290;
+const PANEL_WIDTH = 340;
+const PANEL_HEIGHT = 380;
+
+/** Panel-relative layout constants (relative to panel center) */
+const LOGO_OFFSET_Y = -185;       // Moved up 25px
+const LOGO_MAX_WIDTH = 520;       // 2x larger logo
+const LOGO_MAX_HEIGHT = 220;
+const LEVEL_BADGE_OFFSET_Y = -90; // Moved up another 15px
+const LEVEL_BADGE_WIDTH = 80;
+const LEVEL_BADGE_HEIGHT = 24;
+const LEVEL_BADGE_RADIUS = 14;
+const LEVEL_BADGE_FONT_SIZE = 13;
+const LEVEL_BADGE_ALPHA = 0.9;
+const BOARD_PREVIEW_OFFSET_Y = 50;
+const PLAY_BTN_OFFSET_Y = 190;    // Moved down 15px
+const PLAY_BTN_WIDTH = 110;       // Smaller play button
+const PLAY_BTN_HEIGHT = 44;
 const PLAY_PULSE_SCALE = 1.03;
 const PLAY_PULSE_DURATION = 1200;
-const BANNER_Y = 558;
-const BANNER_WIDTH = 280;
-const BANNER_HEIGHT = 44;
-const BANNER_RADIUS = 12;
-const BANNER_BG_ALPHA = 0.95;
-const BANNER_BORDER_ALPHA = 0.5;
-const BANNER_CHEST_SIZE = 30;
-const BANNER_CHEST_OFFSET_X = -120;
-const BANNER_CLAIM_OFFSET_X = 80;
-const BANNER_PULSE_SCALE = 1.02;
-const BANNER_PULSE_DURATION = 800;
-const CLAIM_FONT_SIZE = 14;
-const TIMER_FONT_SIZE = 12;
-const VERSION_Y = 593;
-const BOARD_FLOAT_DISTANCE = 4;
-const BOARD_FLOAT_DURATION = 2400;
+const BANNER_Y = 535;           // Below play button
+const SHOP_BTN_SCALE = 0.18;    // Shop button scale (1024px image → ~184px wide)
+const SHOP_BTN_Y = BANNER_Y + 15; // Moved down slightly
 
 /** Color keys for gem preview grid randomization */
 const GEM_COLOR_KEYS = Object.keys(GEM_TEXTURE_MAP);
@@ -91,13 +99,16 @@ export class MainMenuScene extends Phaser.Scene {
   private progress!: PlayerProgress;
   private regenTimer?: Phaser.Time.TimerEvent;
   private regenText?: Phaser.GameObjects.Text;
-  private offerManager!: OfferManager;
-  private offerTimerText?: Phaser.GameObjects.Text;
   private playPulseTween?: Phaser.Tweens.Tween;
   private bannerPulseTween?: Phaser.Tweens.Tween;
-  private boardFloatTween?: Phaser.Tweens.Tween;
-  private offerTimerEvent?: Phaser.Time.TimerEvent;
   private bannerContainer?: Phaser.GameObjects.Container;
+  private mainPanel?: GlPanel;
+  private debugOverlay?: DebugOverlay;
+  private logoSprite?: Phaser.GameObjects.Image;
+  private playSprite?: Phaser.GameObjects.Image;
+  private gemBoardContainer?: Phaser.GameObjects.Container;
+  private levelBadgeContainer?: Phaser.GameObjects.Container;
+
 
   /** Guard flag to prevent session_started from firing multiple times */
   private static sessionStartedFired = false;
@@ -112,22 +123,24 @@ export class MainMenuScene extends Phaser.Scene {
 
   create(): void {
     log.info('create', 'Building main menu UI');
+
+    // Set up high-DPI camera for crisp rendering
+    setupHighDPICamera(this);
+
     fadeIn(this);
 
     this.progress = getPlayerProgress(this.registry);
     this.applyLifeRegen();
 
-    this.offerManager = OfferManager.getInstance();
-
     // Add background image if available (at depth 0)
     this.buildBackground();
     this.buildHUD();
     this.buildSettingsButton();
-    this.buildLogo();
-    this.buildSubtitle();
-    this.buildLevelBadge();
-    this.buildGemBoardPreview();
-    this.buildPlayButton();
+
+    // Build main content panel with all centered elements
+    this.buildMainPanel();
+
+    // Elements outside the panel
     this.buildOfferBanner();
     this.buildVersionLabel();
 
@@ -136,7 +149,33 @@ export class MainMenuScene extends Phaser.Scene {
     // Fire session_started analytics (once per session)
     this.fireSessionStartedAnalytics();
 
+    // Enable debug overlay - Press 'D' to toggle, click to select, arrows to move
+    this.setupDebugOverlay();
+
     log.info('create', 'Main menu ready', { level: this.progress.currentLevel, lives: this.progress.lives });
+  }
+
+  private setupDebugOverlay(): void {
+    this.debugOverlay = new DebugOverlay(this);
+
+    // Register elements that can be moved
+    if (this.logoSprite) {
+      this.debugOverlay.registerElement('Logo', this.logoSprite);
+    }
+    if (this.gemBoardContainer) {
+      this.debugOverlay.registerElement('Gem Board', this.gemBoardContainer);
+    }
+    if (this.levelBadgeContainer) {
+      this.debugOverlay.registerElement('Level Badge', this.levelBadgeContainer);
+    }
+    if (this.playSprite) {
+      this.debugOverlay.registerElement('Play Button', this.playSprite);
+    }
+    if (this.bannerContainer) {
+      this.debugOverlay.registerElement('Free Gift Banner', this.bannerContainer);
+    }
+
+    log.info('setupDebugOverlay', 'Debug overlay ready - Press D to toggle');
   }
 
   /**
@@ -197,9 +236,9 @@ export class MainMenuScene extends Phaser.Scene {
       bg.setDepth(0);
       log.info('buildBackground', 'Background image loaded');
     } else {
-      // Gradient fallback - creates a rich purple gradient
+      // Gradient fallback - per design system: #1A0533 to #0D1B2A for main menu
       const gradient = this.add.graphics();
-      gradient.fillGradientStyle(0x1A0A2E, 0x1A0A2E, 0x2A1A4E, 0x2A1A4E, 1);
+      gradient.fillGradientStyle(0x1A0533, 0x1A0533, 0x0D1B2A, 0x0D1B2A, 1);
       gradient.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
       gradient.setDepth(0);
       log.debug('buildBackground', 'Using gradient fallback (bg image not loaded)');
@@ -219,171 +258,200 @@ export class MainMenuScene extends Phaser.Scene {
   // -- Settings gear (top-right corner) ----------------------------------------
 
   private buildSettingsButton(): void {
-    if (!this.textures.exists(ASSET_KEY_SETTINGS)) return;
+    if (!this.textures.exists(ASSET_KEY_SETTINGS)) {
+      log.warn('buildSettingsButton', 'Settings texture not found, skipping');
+      return;
+    }
 
-    const gear = this.add.image(GAME_WIDTH - 36, 32, ASSET_KEY_SETTINGS);
-    const gearScale = 28 / Math.max(gear.width, gear.height);
+    // Per design system: IconButton (medium, 48px), top-right corner, 12px inset from edges
+    // Position below HUD (which is ~50px tall) with proper spacing
+    const gearSize = 48;      // Medium IconButton per design system
+    const iconSize = 22;      // Icon size for medium IconButton
+    const inset = 12;         // 12px inset from edges per design
+    const gearX = GAME_WIDTH - inset - gearSize / 2;
+    const gearY = 30 + gearSize / 2;  // Moved up 10px
+
+    // Add a subtle circular background for visibility against busy backgrounds
+    const gearBg = this.add.graphics();
+    // Transparent background, no border
+    gearBg.fillStyle(0xFFFFFF, 0.05);
+    gearBg.fillCircle(gearX, gearY, gearSize / 2);
+    gearBg.setDepth(899);
+
+    const gear = this.add.image(gearX, gearY, ASSET_KEY_SETTINGS);
+    const gearScale = iconSize / Math.max(gear.width, gear.height);
     gear.setScale(gearScale);
-    gear.setInteractive({ useHandCursor: true });
     gear.setDepth(900);
-    gear.on('pointerdown', () => {
+
+    // Make the entire touch area 48x48 for accessibility (44px minimum)
+    const hitArea = this.add.zone(gearX, gearY, gearSize, gearSize);
+    hitArea.setInteractive({ useHandCursor: true });
+    hitArea.on('pointerdown', () => {
       log.info('buildSettingsButton', 'Settings gear tapped');
       this.showSettingsModal();
     });
+    hitArea.setDepth(901);
 
-    log.debug('buildSettingsButton', 'Settings gear placed');
+    log.debug('buildSettingsButton', 'Settings gear placed', { x: gearX, y: gearY, size: gearSize });
   }
 
-  // -- Logo sprite (y:76-195, centered at y=140) ------------------------------
+  // -- Main Panel (contains logo, subtitle, level badge, gem board, play button) --
 
-  private buildLogo(): void {
-    log.debug('buildLogo', 'Rendering logo sprite');
-    const centerX = Math.round(GAME_WIDTH / 2);
+  private buildMainPanel(): void {
+    log.debug('buildMainPanel', 'Creating main content panel');
 
-    const logo = this.add.image(centerX, LOGO_CENTER_Y, ASSET_KEY_LOGO);
+    // Create the panel container - transparent, no visible background
+    this.mainPanel = new GlPanel(this, PANEL_CENTER_X, PANEL_CENTER_Y, {
+      width: PANEL_WIDTH,
+      height: PANEL_HEIGHT,
+      backgroundColor: 0x000000,
+      backgroundAlpha: 0,             // Fully transparent - no visible panel
+      borderRadius: 0,
+      borderWidth: 0,
+      shadow: false,
+    });
+
+    // Build all panel content with relative positioning
+    this.buildLogoInPanel();
+    this.buildSubtitleInPanel();
+    this.buildLevelBadgeInPanel();
+    this.buildGemBoardInPanel();
+    this.buildPlayButtonInPanel();
+
+    log.info('buildMainPanel', 'Main panel created with all content');
+  }
+
+  // -- Logo sprite (relative to panel center) ---------------------------------
+
+  private buildLogoInPanel(): void {
+    log.debug('buildLogoInPanel', 'Rendering logo sprite in panel');
+
+    this.logoSprite = this.add.image(0, LOGO_OFFSET_Y, ASSET_KEY_LOGO);
 
     // Scale proportionally to fit within max bounds
-    const scaleW = LOGO_MAX_WIDTH / logo.width;
-    const scaleH = LOGO_MAX_HEIGHT / logo.height;
-    const scale = Math.min(scaleW, scaleH, 1);
-    logo.setScale(scale);
+    const scaleW = LOGO_MAX_WIDTH / this.logoSprite.width;
+    const scaleH = LOGO_MAX_HEIGHT / this.logoSprite.height;
+    const scale = Math.min(scaleW, scaleH);
+    this.logoSprite.setScale(scale);
 
-    log.info('buildLogo', 'Logo placed', { scale, origW: logo.width, origH: logo.height });
+    this.mainPanel!.addContent(this.logoSprite);
+
+    log.info('buildLogoInPanel', 'Logo placed in panel', { scale, origW: this.logoSprite.width, origH: this.logoSprite.height });
   }
 
-  // -- Subtitle (y:219) -------------------------------------------------------
+  // -- Subtitle (relative to panel center) ------------------------------------
 
-  private buildSubtitle(): void {
-    log.debug('buildSubtitle', 'Rendering subtitle text');
-    const centerX = Math.round(GAME_WIDTH / 2);
-    const dimColor = `#${UI_COLOR_TEXT_DIM.toString(16).padStart(6, '0')}`;
+  private buildSubtitleInPanel(): void {
+    log.debug('buildSubtitleInPanel', 'Rendering subtitle text in panel');
 
-    this.add.text(centerX, SUBTITLE_Y, 'Match-3 Puzzle', {
-      fontFamily: FONT_FAMILY,
-      fontSize: `${FONT_SIZE_SMALL}px`,
-      color: dimColor,
-    }).setOrigin(0.5);
+    // Match-3 Puzzle subtitle removed per design feedback
   }
 
-  // -- Level badge + stars (y:255) --------------------------------------------
+  // -- Level badge + stars (relative to panel center) -------------------------
 
-  private buildLevelBadge(): void {
-    log.debug('buildLevelBadge', 'Rendering level badge and star count');
-    const centerX = Math.round(GAME_WIDTH / 2);
-    const totalStars = this.progress.totalStars ?? 0;
+  private buildLevelBadgeInPanel(): void {
+    log.debug('buildLevelBadgeInPanel', 'Rendering level badge in panel');
+
+    // Create a container for the badge elements (centered)
+    this.levelBadgeContainer = this.add.container(0, LEVEL_BADGE_OFFSET_Y);
+    const badgeContainer = this.levelBadgeContainer;
 
     // Purple pill background
     const badgeGfx = this.add.graphics();
     badgeGfx.fillStyle(UI_COLOR_PRIMARY, LEVEL_BADGE_ALPHA);
     badgeGfx.fillRoundedRect(
-      Math.round(centerX - LEVEL_BADGE_WIDTH / 2),
-      Math.round(LEVEL_BADGE_Y - LEVEL_BADGE_HEIGHT / 2),
+      Math.round(-LEVEL_BADGE_WIDTH / 2),
+      Math.round(-LEVEL_BADGE_HEIGHT / 2),
       LEVEL_BADGE_WIDTH,
       LEVEL_BADGE_HEIGHT,
       LEVEL_BADGE_RADIUS,
     );
+    badgeContainer.add(badgeGfx);
 
-    // Level text on the left side of the pill
-    const levelTextX = Math.round(centerX - 20);
-    this.add.text(levelTextX, LEVEL_BADGE_Y, `Level ${this.progress.currentLevel}`, {
+    // Level text centered
+    const levelText = this.add.text(0, 0, `Level ${this.progress.currentLevel}`, {
       fontFamily: FONT_FAMILY,
       fontSize: `${LEVEL_BADGE_FONT_SIZE}px`,
       color: '#ffffff',
       fontStyle: 'bold',
-    }).setOrigin(0.5);
+      shadow: {
+        offsetX: 1,
+        offsetY: 1,
+        blur: 2,
+        color: '#000000',
+        fill: true,
+      },
+    }).setOrigin(0.5).setResolution(4);
+    badgeContainer.add(levelText);
 
-    // Star icon + count on the right side
-    const starIconX = Math.round(centerX + 35);
-    const starIcon = this.add.image(starIconX, LEVEL_BADGE_Y, ASSET_KEY_STAR);
-    const starIconScale = 16 / Math.max(starIcon.width, starIcon.height);
-    starIcon.setScale(starIconScale);
+    this.mainPanel!.addContent(badgeContainer);
 
-    this.add.text(Math.round(starIconX + 14), LEVEL_BADGE_Y, `${totalStars}`, {
-      fontFamily: FONT_FAMILY,
-      fontSize: `${FONT_SIZE_SMALL}px`,
-      color: '#FFD700',
-      fontStyle: 'bold',
-    }).setOrigin(0, 0.5);
-
-    log.info('buildLevelBadge', 'Level badge rendered', {
+    log.info('buildLevelBadgeInPanel', 'Level badge rendered in panel', {
       level: this.progress.currentLevel,
-      stars: totalStars,
     });
   }
 
-  // -- Gem board preview (y:295-430) using sprites ----------------------------
+  // -- Gem board preview (relative to panel center) ---------------------------
 
-  private buildGemBoardPreview(): void {
-    log.debug('buildGemBoardPreview', 'Drawing sprite-based gem grid');
+  private buildGemBoardInPanel(): void {
+    log.debug('buildGemBoardInPanel', 'Drawing sprite-based gem grid in panel');
 
-    const gridWidth = PREVIEW_COLS * PREVIEW_GEM_SIZE;
-    const gridHeight = PREVIEW_ROWS * PREVIEW_GEM_SIZE;
-    const startX = Math.round((GAME_WIDTH - gridWidth) / 2 + PREVIEW_GEM_SIZE / 2);
-    const startY = Math.round(BOARD_PREVIEW_START_Y + PREVIEW_GEM_SIZE / 2);
+    const gridWidth = PREVIEW_COLS * PREVIEW_GEM_SPACING;
+    const gridHeight = PREVIEW_ROWS * PREVIEW_GEM_SPACING;
 
-    const container = this.add.container(0, 0);
+    // Container for the gem board, positioned relative to panel center
+    this.gemBoardContainer = this.add.container(0, BOARD_PREVIEW_OFFSET_Y);
+    const boardContainer = this.gemBoardContainer;
+
+    // Gems positioned relative to board container center
+    const startX = Math.round(-gridWidth / 2 + PREVIEW_GEM_SPACING / 2);
+    const startY = Math.round(-gridHeight / 2 + PREVIEW_GEM_SPACING / 2);
 
     for (let row = 0; row < PREVIEW_ROWS; row++) {
       for (let col = 0; col < PREVIEW_COLS; col++) {
-        const x = startX + col * PREVIEW_GEM_SIZE;
-        const y = startY + row * PREVIEW_GEM_SIZE;
+        const x = startX + col * PREVIEW_GEM_SPACING;
+        const y = startY + row * PREVIEW_GEM_SPACING;
         const colorKey = GEM_COLOR_KEYS[Math.floor(Math.random() * GEM_COLOR_KEYS.length)];
         const textureKey = GEM_TEXTURE_MAP[colorKey];
 
         const gem = this.add.image(x, y, textureKey);
-        const gemScale = (PREVIEW_GEM_SIZE - 2) / Math.max(gem.width, gem.height);
-        gem.setScale(gemScale);
+        // Apply base scale plus per-gem visual adjustment
+        const baseScale = (PREVIEW_GEM_SIZE - 2) / Math.max(gem.width, gem.height);
+        const visualAdjust = GEM_VISUAL_SCALE[textureKey] ?? 1.0;
+        gem.setScale(baseScale * visualAdjust);
         gem.setAlpha(0.85);
-        container.add(gem);
+        boardContainer.add(gem);
       }
     }
 
-    // Border around the grid
-    const borderGfx = this.add.graphics();
-    const borderPadding = 8;
-    borderGfx.lineStyle(1, 0xffffff, 0.15);
-    borderGfx.strokeRoundedRect(
-      Math.round((GAME_WIDTH - gridWidth) / 2 - borderPadding),
-      Math.round(BOARD_PREVIEW_START_Y - borderPadding),
-      gridWidth + borderPadding * 2,
-      gridHeight + borderPadding * 2,
-      8,
-    );
-    container.add(borderGfx);
 
-    // Floating animation
-    this.boardFloatTween = this.tweens.add({
-      targets: container,
-      y: { from: 0, to: BOARD_FLOAT_DISTANCE },
-      duration: BOARD_FLOAT_DURATION,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
+    this.mainPanel!.addContent(boardContainer);
 
-    log.info('buildGemBoardPreview', 'Gem board preview rendered', {
+    log.info('buildGemBoardInPanel', 'Gem board preview rendered in panel', {
       cols: PREVIEW_COLS,
       rows: PREVIEW_ROWS,
       gemSize: PREVIEW_GEM_SIZE,
     });
   }
 
-  // -- Play button (y:454-506, centered at ~480) ------------------------------
+  // -- Play button (relative to panel center) ---------------------------------
 
-  private buildPlayButton(): void {
-    log.debug('buildPlayButton', 'Creating Play button');
+  private buildPlayButtonInPanel(): void {
+    log.debug('buildPlayButtonInPanel', 'Creating Play button in panel');
 
     if (this.textures.exists(ASSET_KEY_BTN_PLAY_GREEN)) {
       // Use the play green sprite — scale to target width for prominence
-      const playSprite = this.add.image(Math.round(GAME_WIDTH / 2), PLAY_BTN_Y, ASSET_KEY_BTN_PLAY_GREEN);
-      playSprite.setDisplaySize(PLAY_BTN_WIDTH, PLAY_BTN_WIDTH * (playSprite.height / playSprite.width));
-      const scale = playSprite.scaleX;
-      playSprite.setInteractive({ useHandCursor: true });
-      playSprite.on('pointerdown', () => this.onPlayTap());
+      this.playSprite = this.add.image(0, PLAY_BTN_OFFSET_Y, ASSET_KEY_BTN_PLAY_GREEN);
+      this.playSprite.setDisplaySize(PLAY_BTN_WIDTH, PLAY_BTN_HEIGHT);
+      const scale = this.playSprite.scaleX;
+      this.playSprite.setInteractive({ useHandCursor: true });
+      this.playSprite.on('pointerdown', () => this.onPlayTap());
+
+      this.mainPanel!.addContent(this.playSprite);
 
       // Pulse animation
       this.playPulseTween = this.tweens.add({
-        targets: playSprite,
+        targets: this.playSprite,
         scaleX: { from: scale, to: scale * PLAY_PULSE_SCALE },
         scaleY: { from: scale, to: scale * PLAY_PULSE_SCALE },
         duration: PLAY_PULSE_DURATION,
@@ -392,12 +460,13 @@ export class MainMenuScene extends Phaser.Scene {
         ease: 'Sine.easeInOut',
       });
     } else {
-      // Fallback to GlButton
-      this.playButton = new GlButton(this, Math.round(GAME_WIDTH / 2), PLAY_BTN_Y, 'Play', {
+      // Fallback to GlButton - need to create it at panel position
+      // Per design system: PrimaryButton Large uses 16px font
+      this.playButton = new GlButton(this, PANEL_CENTER_X, PANEL_CENTER_Y + PLAY_BTN_OFFSET_Y, 'Play', {
         gradient: GRADIENT_BUTTON_SUCCESS,
         width: PLAY_BTN_WIDTH,
         height: PLAY_BTN_HEIGHT,
-        fontSize: FONT_SIZE_MEDIUM,
+        fontSize: FONT_SIZE_HUD,  // 16px for large button
       });
       this.playButton.onClick(() => this.onPlayTap());
 
@@ -443,7 +512,7 @@ export class MainMenuScene extends Phaser.Scene {
       color: '#ffffff',
       align: 'center',
       wordWrap: { width: 260 },
-    }).setOrigin(0.5, 0);
+    }).setOrigin(0.5, 0).setResolution(4);
     modal.addContent(bodyText);
 
     const getLivesBtn = new GlButton(this, 0, 0, 'Get Lives', {
@@ -471,28 +540,57 @@ export class MainMenuScene extends Phaser.Scene {
 
     const modal = new GlModal(this, { title: 'Settings' });
 
+    // Add spacer to push content down
+    const spacer = this.add.text(0, 0, '', { fontSize: '1px' });
+    modal.addContent(spacer, 40);
+
     const soundEnabled = this.registry.get('soundEnabled') !== false;
 
-    const soundBtn = new GlButton(this, 0, 0, soundEnabled ? 'Sound: ON' : 'Sound: OFF', {
-      width: 180, height: 44,
-      gradient: soundEnabled ? GRADIENT_BUTTON_SUCCESS : GRADIENT_BUTTON_PRIMARY,
-      fontSize: FONT_SIZE_SMALL,
-    });
-    soundBtn.onClick(() => {
+    // Sound toggle - fixed icon size for both states
+    const soundIconKey = soundEnabled ? ASSET_KEY_SOUND_ON : ASSET_KEY_SOUND_OFF;
+    const soundContainer = this.add.container(-40, 0);  // Left-aligned
+
+    const SOUND_ICON_SIZE = 40;  // Fixed size for both icons
+    const soundIcon = this.add.image(0, 0, soundIconKey);
+    soundIcon.setDisplaySize(SOUND_ICON_SIZE, SOUND_ICON_SIZE);
+    soundContainer.add(soundIcon);
+
+    const soundLabel = this.add.text(SOUND_ICON_SIZE / 2 + 12, 0, soundEnabled ? 'Sound ON' : 'Sound OFF', {
+      fontFamily: FONT_FAMILY,
+      fontSize: '14px',
+      color: '#FFFFFF',
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setResolution(4);
+    soundContainer.add(soundLabel);
+
+    soundContainer.setSize(160, 50);
+    soundContainer.setInteractive({ useHandCursor: true });
+    soundContainer.on('pointerdown', () => {
       const newState = this.registry.get('soundEnabled') === false;
       this.registry.set('soundEnabled', newState);
       log.info('showSettingsModal', 'Sound toggled', { enabled: newState });
-      modal.hide();
-      this.showSettingsModal();
+      // Swap icon and label - keep same display size
+      const newIconKey = newState ? ASSET_KEY_SOUND_ON : ASSET_KEY_SOUND_OFF;
+      soundIcon.setTexture(newIconKey);
+      soundIcon.setDisplaySize(SOUND_ICON_SIZE, SOUND_ICON_SIZE);
+      soundLabel.setText(newState ? 'Sound ON' : 'Sound OFF');
     });
-    modal.addContent(soundBtn);
+    soundContainer.on('pointerover', () => soundIcon.setAlpha(0.8));
+    soundContainer.on('pointerout', () => soundIcon.setAlpha(1));
 
+    modal.addContent(soundContainer, 20);
+
+    // Spacer before version
+    const spacer2 = this.add.text(0, 0, '', { fontSize: '1px' });
+    modal.addContent(spacer2, 30);
+
+    // Per design system: text-tiny (11px), color-text-tertiary (#888888)
     const versionText = this.add.text(0, 0, 'Gem Link v0.3.0', {
       fontFamily: FONT_FAMILY,
       fontSize: `${FONT_SIZE_XS}px`,
-      color: `#${UI_COLOR_TEXT_DIM.toString(16).padStart(6, '0')}`,
-    }).setOrigin(0.5, 0);
-    modal.addContent(versionText);
+      color: `#${UI_COLOR_TEXT_TERTIARY.toString(16).padStart(6, '0')}`,
+    }).setOrigin(0.5, 0).setResolution(4);
+    modal.addContent(versionText, 20);
 
     modal.onClose(() => {
       log.info('showSettingsModal', 'Settings closed');
@@ -501,131 +599,53 @@ export class MainMenuScene extends Phaser.Scene {
     modal.show();
   }
 
-  // -- Free Gift Banner (y:530-586, centered at y=558) ------------------------
+  // -- Shop Button (below play button) ----------------------------------------
 
   private buildOfferBanner(): void {
-    log.debug('buildOfferBanner', 'Creating free gift banner');
+    log.debug('buildOfferBanner', 'Creating shop button');
 
     const centerX = Math.round(GAME_WIDTH / 2);
-    const canClaim = this.offerManager.canCollectFreeGift(this.progress);
-
-    this.bannerContainer = this.add.container(centerX, BANNER_Y);
-
-    // Background: solid rounded rect (no fillGradientStyle)
-    const bgGfx = this.add.graphics();
-    bgGfx.fillStyle(UI_COLOR_SECONDARY, BANNER_BG_ALPHA);
-    bgGfx.fillRoundedRect(
-      Math.round(-BANNER_WIDTH / 2),
-      Math.round(-BANNER_HEIGHT / 2),
-      BANNER_WIDTH,
-      BANNER_HEIGHT,
-      BANNER_RADIUS,
-    );
-    // Gold border
-    bgGfx.lineStyle(1, UI_COLOR_ACCENT, BANNER_BORDER_ALPHA);
-    bgGfx.strokeRoundedRect(
-      Math.round(-BANNER_WIDTH / 2),
-      Math.round(-BANNER_HEIGHT / 2),
-      BANNER_WIDTH,
-      BANNER_HEIGHT,
-      BANNER_RADIUS,
-    );
-    this.bannerContainer.add(bgGfx);
-
-    // Chest sprite on the left
-    const chest = this.add.image(BANNER_CHEST_OFFSET_X, 0, ASSET_KEY_CHEST_CLOSED);
-    const chestScale = BANNER_CHEST_SIZE / Math.max(chest.width, chest.height);
-    chest.setScale(chestScale);
-    this.bannerContainer.add(chest);
-
-    // "Free Gift!" text centered
-    const labelText = this.add.text(0, -2, 'Free Gift!', {
-      fontFamily: FONT_FAMILY,
-      fontSize: `${FONT_SIZE_SMALL}px`,
-      color: '#ffffff',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
-    this.bannerContainer.add(labelText);
-
-    // Timer or CLAIM text on the right
-    this.offerTimerText = this.add.text(BANNER_CLAIM_OFFSET_X, -2, '', {
-      fontFamily: FONT_FAMILY,
-      fontSize: `${canClaim ? CLAIM_FONT_SIZE : TIMER_FONT_SIZE}px`,
-      color: canClaim ? '#FFD700' : `#${UI_COLOR_TEXT_DIM.toString(16).padStart(6, '0')}`,
-      fontStyle: canClaim ? 'bold' : 'normal',
-    }).setOrigin(0.5);
-    this.bannerContainer.add(this.offerTimerText);
-
-    // Interactive zone
-    this.bannerContainer.setInteractive(
-      new Phaser.Geom.Rectangle(
-        Math.round(-BANNER_WIDTH / 2),
-        Math.round(-BANNER_HEIGHT / 2),
-        BANNER_WIDTH,
-        BANNER_HEIGHT,
-      ),
-      Phaser.Geom.Rectangle.Contains,
-    );
-    this.bannerContainer.on('pointerdown', () => {
-      log.info('buildOfferBanner', 'Free gift banner tapped');
-      this.scene.start(SCENE_SHOP);
-    });
-
-    // Pulse when claimable
-    if (canClaim) {
-      this.bannerPulseTween = this.tweens.add({
-        targets: this.bannerContainer,
-        scaleX: { from: 1.0, to: BANNER_PULSE_SCALE },
-        scaleY: { from: 1.0, to: BANNER_PULSE_SCALE },
-        duration: BANNER_PULSE_DURATION,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-    }
-
-    this.updateOfferTimer();
-
-    log.info('buildOfferBanner', 'Free gift banner created', { canClaim });
+    this.buildShopButton(centerX);
   }
 
-  private updateOfferTimer(): void {
-    const remainingMs = this.offerManager.getFreeGiftTimeRemaining(this.progress);
-    if (remainingMs <= 0) {
-      if (this.offerTimerText) {
-        this.offerTimerText.setText('CLAIM');
-        this.offerTimerText.setStyle({
-          fontFamily: FONT_FAMILY,
-          fontSize: `${CLAIM_FONT_SIZE}px`,
-          color: '#FFD700',
-          fontStyle: 'bold',
-        });
-      }
-      return;
-    }
+  /** Build the shop button below free gift banner using image asset */
+  private buildShopButton(freeGiftCenterX: number): void {
+    // Position shop button centered below free gift
+    const shopX = freeGiftCenterX;
 
-    if (this.offerTimerText) {
-      this.offerTimerText.setText(this.offerManager.formatTimeRemaining(remainingMs));
-      this.offerTimerText.setStyle({
-        fontFamily: FONT_FAMILY,
-        fontSize: `${TIMER_FONT_SIZE}px`,
-        color: `#${UI_COLOR_TEXT_DIM.toString(16).padStart(6, '0')}`,
-        fontStyle: 'normal',
+    if (this.textures.exists(ASSET_KEY_BTN_SHOP)) {
+      const shopBtn = this.add.image(shopX, SHOP_BTN_Y, ASSET_KEY_BTN_SHOP);
+      // Scale uniformly to maintain aspect ratio - make it prominent
+      shopBtn.setScale(SHOP_BTN_SCALE);
+      shopBtn.setDepth(10);
+      // Use pixel-perfect hit detection so only visible pixels are clickable
+      shopBtn.setInteractive({ useHandCursor: true, pixelPerfect: true, alphaTolerance: 128 });
+      shopBtn.on('pointerdown', () => {
+        log.info('buildShopButton', 'Shop button pressed');
+        this.scene.start(SCENE_SHOP);
+      });
+      shopBtn.on('pointerover', () => shopBtn.setAlpha(0.9));
+      shopBtn.on('pointerout', () => shopBtn.setAlpha(1));
+    } else {
+      // Fallback to GlButton if image not found
+      const shopBtn = new GlButton(this, shopX, SHOP_BTN_Y, 'Shop', {
+        width: 200,
+        height: 50,
+        gradient: GRADIENT_BUTTON_PRIMARY,
+        fontSize: FONT_SIZE_SMALL,
+      });
+      shopBtn.onClick(() => {
+        log.info('buildShopButton', 'Shop button pressed');
+        this.scene.start(SCENE_SHOP);
       });
     }
-
-    this.offerTimerEvent = this.time.delayedCall(1000, () => this.updateOfferTimer());
   }
 
-  // -- Version label (y:586-600) ----------------------------------------------
+
+  // -- Version label (positioned above Jest footer) ---------------------------
 
   private buildVersionLabel(): void {
-    const dimColor = `#${UI_COLOR_TEXT_DIM.toString(16).padStart(6, '0')}`;
-    this.add.text(Math.round(GAME_WIDTH / 2), VERSION_Y, 'v0.3.0', {
-      fontFamily: FONT_FAMILY,
-      fontSize: `${FONT_SIZE_XS}px`,
-      color: dimColor,
-    }).setOrigin(0.5).setAlpha(0.5);
+    // Version label removed per design feedback
   }
 
   // -- Lives regeneration logic -----------------------------------------------
@@ -726,7 +746,7 @@ export class MainMenuScene extends Phaser.Scene {
         fontFamily: FONT_FAMILY,
         fontSize: `${FONT_SIZE_XS}px`,
         color: dangerColor,
-      }).setOrigin(0.5);
+      }).setOrigin(0.5).setResolution(4);
     } else {
       this.regenText.setText(timeStr).setVisible(true);
     }
@@ -750,16 +770,6 @@ export class MainMenuScene extends Phaser.Scene {
     if (this.bannerPulseTween) {
       this.bannerPulseTween.destroy();
       this.bannerPulseTween = undefined;
-    }
-
-    if (this.boardFloatTween) {
-      this.boardFloatTween.destroy();
-      this.boardFloatTween = undefined;
-    }
-
-    if (this.offerTimerEvent) {
-      this.offerTimerEvent.remove(false);
-      this.offerTimerEvent = undefined;
     }
   }
 }

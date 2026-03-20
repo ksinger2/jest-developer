@@ -291,6 +291,7 @@ export interface ProductInfo {
   name: string;
   description: string;
   priceInTokens: number;
+  priceUSD: string;  // e.g., "$0.99", "$1.99"
 }
 
 /** Phase 1 product catalog */
@@ -300,66 +301,77 @@ export const PRODUCT_CATALOG: ProductInfo[] = [
     name: 'Extra Moves',
     description: '+3 moves during active level',
     priceInTokens: 1,
+    priceUSD: '$0.99',
   },
   {
     sku: ProductSKU.LIVES_REFILL,
     name: 'Lives Refill',
     description: 'Refill lives to 5/5',
     priceInTokens: 2,
+    priceUSD: '$1.99',
   },
   {
     sku: ProductSKU.STARTER_PACK,
     name: 'Starter Pack',
     description: '5x Extra Moves + 3x Lives Refill + Exclusive Gem Skin',
     priceInTokens: 3,
+    priceUSD: '$2.99',
   },
   {
     sku: ProductSKU.REMAP,
     name: 'Re-map',
     description: 'Shuffle all gems on the board — keep your score & moves',
     priceInTokens: 1,
+    priceUSD: '$0.99',
   },
   {
     sku: ProductSKU.PACK_BEGINNER,
     name: 'Beginner Pack',
     description: '250 coins',
     priceInTokens: 2,
+    priceUSD: '$1.99',
   },
   {
     sku: ProductSKU.PACK_JUMBO,
     name: 'Jumbo Pack',
     description: '1000 coins + 10 gems',
     priceInTokens: 5,
+    priceUSD: '$4.99',
   },
   {
     sku: ProductSKU.PACK_SUPER,
     name: 'Super Pack',
     description: '3000 coins + 30 gems + 3 boosters',
     priceInTokens: 10,
+    priceUSD: '$9.99',
   },
   {
     sku: ProductSKU.PACK_MEGA,
     name: 'Mega Pack',
     description: '8000 coins + 100 gems + 10 boosters',
     priceInTokens: 20,
+    priceUSD: '$19.99',
   },
   {
     sku: ProductSKU.HAMMER,
     name: 'Hammer',
     description: 'Destroy any single gem on the board',
     priceInTokens: 1,
+    priceUSD: '$0.99',
   },
   {
     sku: ProductSKU.BOMB_BOOSTER,
     name: 'Bomb Booster',
     description: 'Create a bomb gem at a random position',
     priceInTokens: 2,
+    priceUSD: '$1.99',
   },
   {
     sku: ProductSKU.RAINBOW,
     name: 'Rainbow',
     description: 'Clear all gems of a chosen color',
     priceInTokens: 1,
+    priceUSD: '$0.99',
   },
 ];
 
